@@ -1,14 +1,29 @@
 'use client';
 
+/**
+ * 3D Starfield — Star Wars-style warp background
+ *
+ * Each star lives at (x, y, z) in 3D space, centered at origin.
+ * Every frame, z decreases — the star moves toward the viewer.
+ * Screen position is derived by perspective projection:
+ *   screenX = (x / z) * fov + cx
+ *   screenY = (y / z) * fov + cy
+ *   size    = baseSize / z
+ *
+ * Scroll velocity boosts z-speed → stars stretch into radial streaks (warp).
+ * Mouse position tilts the projection center (cx, cy) → "looking around" feel.
+ * Mouse velocity adds a minor warp boost → fast swipes cause a brief streak burst.
+ */
+
 import { useEffect, useRef } from 'react';
 
 type Shape = 'dot' | 'spike4' | 'spike6';
 
 type Star3D = {
-  x: number;
+  x: number;       // 3D position, range -1 to 1 (relative to center)
   y: number;
-  z: number;
-  pz: number;
+  z: number;       // depth: 1 = far, ~0 = just passed the camera
+  pz: number;      // z from the previous frame — used to compute streak length
   baseSize: number;
   brightness: number;
   shape: Shape;
@@ -25,9 +40,24 @@ type Meteor = {
 };
 
 const STAR_COUNT = 800;
-const BASE_SPEED = 0.018;
+
+// Base forward speed. 0 = stars are stationary until the user scrolls or moves the mouse.
+const BASE_SPEED = 0;
+
+// How much scroll velocity contributes to warp speed
 const SCROLL_MULTIPLIER = 0.00055;
+
+// How much mouse movement velocity contributes to warp speed (intentionally tiny)
+const MOUSE_WARP_MULTIPLIER = 0.00008;
+
+// warpSpeed value at which warpFactor reaches 1 (full hyperspace streaks)
 const WARP_THRESHOLD = 0.04;
+
+// How far the projection center shifts toward the mouse (fraction of half-screen)
+const TILT_STRENGTH = 0.06;
+
+// Lerp factor for tilt smoothing — low = sluggish/organic, high = snappy
+const TILT_LERP = 0.06;
 
 function makeStar(): Star3D {
   const r = Math.random();
@@ -36,6 +66,8 @@ function makeStar(): Star3D {
     x: (Math.random() - 0.5) * 2,
     y: (Math.random() - 0.5) * 2,
     z: Math.random() * 0.98 + 0.02,
+    // pz starts at 1 so the first frame doesn't produce a giant streak
+    // (streak = difference between current and previous projected position)
     pz: 1,
     baseSize: Math.random() * 1.4 + 0.5,
     brightness: Math.random() * 0.35 + 0.65,
@@ -46,18 +78,28 @@ function makeStar(): Star3D {
 function resetStar(s: Star3D) {
   s.x = (Math.random() - 0.5) * 2;
   s.y = (Math.random() - 0.5) * 2;
+  // Always reset to z=1 (far background), not a random z.
+  // Random z on reset would cause stars to pop in at visible sizes mid-screen.
   s.z = 1;
   s.pz = 1;
 }
 
-function drawDot(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, alpha: number) {
+function drawDot(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, size: number, alpha: number,
+) {
   ctx.beginPath();
   ctx.arc(x, y, Math.max(0.4, size), 0, Math.PI * 2);
   ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
   ctx.fill();
 }
 
-function drawSpike4(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, alpha: number) {
+// 4-spike: two perpendicular lines (H + V) sharing a bright center dot.
+// The center dot is drawn separately so it stays round and bright regardless of line width.
+function drawSpike4(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, size: number, alpha: number,
+) {
   const arm = size * 2.2;
   const w = Math.max(0.5, size * 0.35);
   ctx.save();
@@ -76,7 +118,12 @@ function drawSpike4(ctx: CanvasRenderingContext2D, x: number, y: number, size: n
   ctx.restore();
 }
 
-function drawSpike6(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, alpha: number) {
+// 6-spike: three lines at 0°, 60°, 120° — drawn through center so each line
+// covers both directions without needing 6 separate segments.
+function drawSpike6(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, size: number, alpha: number,
+) {
   const arm = size * 2.0;
   const w = Math.max(0.5, size * 0.3);
   ctx.save();
@@ -125,9 +172,19 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
 
     const stars: Star3D[] = Array.from({ length: starCount }, makeStar);
 
+    // Scroll tracking
     let scrollY = 0;
     let lastScrollY = 0;
     let warpSpeed = 0;
+
+    // Mouse tracking
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+    let lastMouseX = mouseX;
+    let lastMouseY = mouseY;
+    // Smoothed tilt offsets applied to the projection center
+    let tiltX = 0;
+    let tiltY = 0;
 
     let meteor: Meteor | null = null;
     let nextMeteorIn = Math.random() * 6000 + 4000;
@@ -136,26 +193,51 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      // Re-center mouse tracking after resize so tilt doesn't jump
+      mouseX = canvas.width / 2;
+      mouseY = canvas.height / 2;
     };
     resize();
 
     const onScroll = () => { scrollY = window.scrollY; };
+    const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY; };
+
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', onMouseMove);
 
     const draw = (now: number) => {
       const dt = now - lastTime;
       lastTime = now;
 
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2;
+      // --- Tilt: lerp projection center toward mouse position ---
+      // Normalized mouse offset: -1 (left/top) to +1 (right/bottom)
+      const normalizedMX = (mouseX - canvas.width  / 2) / (canvas.width  / 2);
+      const normalizedMY = (mouseY - canvas.height / 2) / (canvas.height / 2);
+      const targetTiltX = normalizedMX * canvas.width  * TILT_STRENGTH;
+      const targetTiltY = normalizedMY * canvas.height * TILT_STRENGTH;
+      tiltX += (targetTiltX - tiltX) * TILT_LERP;
+      tiltY += (targetTiltY - tiltY) * TILT_LERP;
+
+      const cx = canvas.width  / 2 + tiltX;
+      const cy = canvas.height / 2 + tiltY;
       const fov = canvas.width * 0.85;
 
-      // Update warp from scroll velocity
+      // --- Warp speed: scroll velocity + mouse velocity ---
       const scrollDelta = scrollY - lastScrollY;
       lastScrollY = scrollY;
-      warpSpeed = warpSpeed * 0.88 + Math.abs(scrollDelta) * SCROLL_MULTIPLIER;
+      const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
+      lastMouseX = mouseX;
+      lastMouseY = mouseY;
+
+      // warpSpeed decays each frame; both scroll and mouse inject into it
+      warpSpeed = warpSpeed * 0.88
+        + Math.abs(scrollDelta) * SCROLL_MULTIPLIER
+        + mouseDelta * MOUSE_WARP_MULTIPLIER;
+
       const speed = BASE_SPEED + warpSpeed;
+
+      // warpFactor: 0 = normal shapes, 1 = full hyperspace streaks
       const warpFactor = Math.min(1, warpSpeed / WARP_THRESHOLD);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -169,6 +251,7 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
           continue;
         }
 
+        // Perspective projection — current and previous frame positions
         const sx  = (s.x / s.z)  * fov + cx;
         const sy  = (s.y / s.z)  * fov + cy;
         const psx = (s.x / s.pz) * fov + cx;
@@ -179,7 +262,9 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
         const size = s.baseSize / s.z;
 
         if (warpFactor > 0.12) {
-          // Warp streak — gradient line from tail to head
+          // Warp mode: draw a gradient streak from previous position to current.
+          // The streak radiates outward from center naturally because projection
+          // amplifies displacement the closer z gets to 0.
           const streakAlpha = Math.min(1, s.brightness * (0.4 + warpFactor * 0.6));
           const grad = ctx.createLinearGradient(psx, psy, sx, sy);
           grad.addColorStop(0, 'rgba(255,255,255,0)');
@@ -191,21 +276,20 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
           ctx.lineWidth = Math.max(0.5, size * 0.45);
           ctx.stroke();
 
-          // Bright tip
           ctx.beginPath();
           ctx.arc(sx, sy, Math.max(0.3, size * 0.3), 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255,255,255,${streakAlpha.toFixed(2)})`;
           ctx.fill();
         } else {
-          // Normal shape rendering
+          // Normal mode: draw the star's assigned shape
           const alpha = s.brightness * (1 - warpFactor * 0.5);
-          if (s.shape === 'spike4') drawSpike4(ctx, sx, sy, size, alpha);
+          if (s.shape === 'spike4')      drawSpike4(ctx, sx, sy, size, alpha);
           else if (s.shape === 'spike6') drawSpike6(ctx, sx, sy, size, alpha);
-          else drawDot(ctx, sx, sy, size, alpha);
+          else                           drawDot(ctx, sx, sy, size, alpha);
         }
       }
 
-      // Meteor
+      // --- Meteor ---
       nextMeteorIn -= dt;
       if (nextMeteorIn <= 0 && !meteor) {
         meteor = spawnMeteor(canvas.width, canvas.height);
@@ -254,6 +338,7 @@ export default function Starfield({ starCount = STAR_COUNT }: { starCount?: numb
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('mousemove', onMouseMove);
     };
   }, [starCount]);
 

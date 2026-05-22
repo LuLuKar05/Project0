@@ -1,0 +1,64 @@
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project{
+  //Project main input
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  title         String
+  category      String
+  date          DateTime
+  shortDesc     String
+  fullDesc      String
+  tags          String[]
+  //URL Link
+  githubURL     String?   //null = for private project
+  deployedURL   String?   //null = not deployed
+  active        Boolean   @default(false)
+  order         Int       //To control orbit slot;
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  //1-on-1 relations
+  orbit         OrbitConfig?
+  visual        PlanetVisual?
+}
+
+model OrbitConfig{
+  id            Int   @id @default(autoincrement())
+  radius        Float
+  speed         Float
+  inclination   Float
+
+  projectId   String @unique
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PlanetVisual{
+  id            Int   @id @default(autoincrement())
+  textureUrl      String
+  sz            Float
+  rotationSpeed Float
+  glowIntensity Float
+
+  projectId     String @unique
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ContactMessage{
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String
+  message       String
+
+  createdAt     DateTime @default(now())
+}
