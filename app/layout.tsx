@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Starfield from "../components/Starfield";
+import StarfieldProvider from "../components/StarfieldProvider";
+import AppShell from "../components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,8 +30,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-secondary text-white min-h-full flex flex-col">
-        <Starfield />
-        {children}
+        <StarfieldProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+        </StarfieldProvider>
       </body>
     </html>
   );

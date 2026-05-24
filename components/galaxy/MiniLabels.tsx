@@ -1,3 +1,4 @@
+'use client';
 /**
  * @file components/MiniLabels.tsx
  * Always-visible small planet name labels rendered in the HTML overlay layer.
@@ -9,14 +10,13 @@
  * Dead-orbit planets show "• • •" instead of their classified title.
  */
 
-'use client';
-
 import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
   useEffect,
 } from 'react';
+
 import useProjects from '@/hooks/useProjects';
 
 // ─────────────────────────────────────────────

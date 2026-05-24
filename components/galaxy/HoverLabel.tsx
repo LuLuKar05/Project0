@@ -12,7 +12,7 @@
 
 'use client';
 
-import React, { useRef, useEffelabct, forwardRef, useImperativeHandle } from 'react';
+import { useRef, forwardRef, useImperativeHandle } from 'react';
 import type { Project } from '@/lib/types';
 
 // ─────────────────────────────────────────────
@@ -34,18 +34,11 @@ export interface HoverLabelHandle {
   setPosition: (x: number, y: number) => void;
 }
 
-// ─────────────────────────────────────────────
-//  Props
-// ─────────────────────────────────────────────
-
+//Properties Structure of this component
 interface HoverLabelProps {
   /** The currently hovered project; null = tooltip hidden */
   project: Project | null;
 }
-
-// ─────────────────────────────────────────────
-//  Component
-// ─────────────────────────────────────────────
 
 /**
  * Floating planet tooltip.
@@ -56,13 +49,14 @@ const HoverLabel = forwardRef<HoverLabelHandle, HoverLabelProps>(
   function HoverLabel({ project }, ref) {
     /** Direct ref to the container element for imperative position updates */
     const containerRef = useRef<HTMLDivElement>(null);
+    const LABEL_OFFSET_Y = 130; // pixels to shift label above planet center
 
     // Expose position setter to parent via ref
     useImperativeHandle(ref, () => ({
       setPosition(x: number, y: number) {
         if (!containerRef.current) return;
         containerRef.current.style.left = `${x}px`;
-        containerRef.current.style.top  = `${y - 130}px`; // offset above planet
+        containerRef.current.style.top  = `${y - LABEL_OFFSET_Y}px`; // offset above planet
       },
     }));
 
@@ -74,13 +68,12 @@ const HoverLabel = forwardRef<HoverLabelHandle, HoverLabelProps>(
         id="hover-label"
         className={`hl-wrap${isVisible ? ' visible' : ''}`}
         aria-hidden={!isVisible}
-        aria-live="polite"
       >
         {/* Tooltip card */}
-        <div className="hl-box">
+        <div className="hl-box" aria-live="polite">
           <div className="hl-cat">{project?.category ?? ''}</div>
           <div className="hl-ttl">{project?.title    ?? ''}</div>
-          <div className="hl-dsc">{project?.desc      ?? ''}</div>
+          <div className="hl-dsc">{project?.shortDesc      ?? ''}</div>
         </div>
         {/* Vertical connector line between tooltip and planet */}
         <div className="hl-con" />

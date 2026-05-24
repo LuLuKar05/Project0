@@ -29,7 +29,7 @@ export type Projects = {
     };
 };
 export default function useProjects() {
-    const [projects, setProjects] = useState<Projects[] | null>([]);
+    const [projects, setProjects] = useState<Projects[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

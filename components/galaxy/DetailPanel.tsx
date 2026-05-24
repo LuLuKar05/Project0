@@ -5,37 +5,35 @@
  * Slides in from the right when `project` is non-null (visible) and slides
  * out when it is null.  The transition is driven by a CSS class toggle
  * (`visible`) rather than inline styles, keeping animation logic in CSS.
- *
- * Props:
+ */
+/** 
+ * Project's Detail Session, exist on the right side of the screen, and will slide in when the project is selected.
+ * Will get the properties (Selected Project Details) and Handler functions from the parent component, which controls the selected state and camera controls.
+ * 
+ * The project object structure is defined in the useProjects hook and it does the same as the database schema.
+ * 
+ *  Props:
  *  project  - The selected Project, or null when no planet is selected
- *  onClose  - Callback to fly the camera back to overview
- *  onPrev   - Navigate to the previous project
- *  onNext   - Navigate to the next project
+ *  onClose  - callback to fly the camera back to overview.
+ *  onPrev, onNext  - Navigate to the previous and next projects.
  */
 
 'use client';
 
 import React from 'react';
-import { Projects}  from '@/hooks/useProjects';
+import {type Projects} from '@/hooks/useProjects';
 
-// ─────────────────────────────────────────────
-//  Props
-// ─────────────────────────────────────────────
 
+//Properties Structure of this component
 interface DetailPanelProps {
-  /** The currently selected project; null = panel is hidden */
   project: Projects | null;
-  /** Called when the user clicks "Back to Sector View" */
+  //Handler functions for the back button and prev/next navigation buttons. 
+  //These are passed down from the parent component (Galaxy/projects) which manages the selected project state and camera controls.
   onClose: () => void;
-  /** Navigate to the previous active project */
   onPrev: () => void;
-  /** Navigate to the next active project */
   onNext: () => void;
 }
 
-// ─────────────────────────────────────────────
-//  Component
-// ─────────────────────────────────────────────
 
 /**
  * Sliding detail panel for a selected project.
@@ -67,10 +65,10 @@ export default function DetailPanel({ project, onClose, onPrev, onNext }: Detail
           <h2 className="dp-ttl">{project.title}</h2>
 
           {/* Year */}
-          <div className="dp-yr">{project.year}</div>
+          <div className="dp-yr">{project.date}</div>
 
           {/* Full description */}
-          <p className="dp-desc">{project.full || project.desc}</p>
+          <p className="dp-desc">{project.fullDesc || project.shortDesc}</p>
 
           {/* Tech stack label */}
           <div className="dp-tl">Tech Stack</div>
@@ -86,27 +84,27 @@ export default function DetailPanel({ project, onClose, onPrev, onNext }: Detail
 
           {/* External links section */}
           <div className="dp-links">
-            {project.github && (
+            {project.githubURL && (
               <a
                 className="dp-lnk"
-                href={project.github}
+                href={project.githubURL}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 View on GitHub →
               </a>
             )}
-            {project.live && (
+            {project.deployedURL && (
               <a
                 className="dp-lnk"
-                href={project.live}
+                href={project.deployedURL}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Live Demo →
               </a>
             )}
-            {!project.github && !project.live && (
+            {!project.githubURL && !project.deployedURL && (
               <span className="dp-lnk off">Links classified</span>
             )}
           </div>
