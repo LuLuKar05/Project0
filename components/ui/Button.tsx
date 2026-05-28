@@ -1,5 +1,5 @@
 import React from 'react'
-import Image from 'next/image'
+import Image, { type StaticImageData } from 'next/image'
 export default function Button({icon}:{ icon: string | StaticImageData }) {
   return (
     <>

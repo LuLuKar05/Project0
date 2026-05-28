@@ -10,11 +10,10 @@
  * Dead-orbit planets show "• • •" instead of their classified title.
  */
 
-import React, {
+import {
   useRef,
   forwardRef,
   useImperativeHandle,
-  useEffect,
 } from 'react';
 
 import useProjects from '@/hooks/useProjects';

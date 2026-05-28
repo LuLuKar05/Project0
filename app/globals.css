@@ -1,14 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ff6200;
-  --color-secondary: #000000;
-  --color-thirdary: #0e1862;
-  --color-font: #ffffff;
+  --color-primary:          #ff6200;
+  --color-secondary:        #000000;
+  --color-thirdary:         #0e1862;
+  --color-font:             #ffffff;
 
-  --color-primary-header: #ff6200;
+  --color-primary-header:   #ff6200;
   --color-secondary-header: #ffffff;
 
-  --color-primary-hover: #ff6200;
-  --color-secondary-hover: #ffffff;
+  --color-primary-hover:    #ff6200;
+  --color-secondary-hover:  #ffffff;
+
+  /* Custom font — use class `font-nasalization` anywhere in JSX */
+  --font-nasalization: 'Nasalization', sans-serif;
+}
+
+@font-face {
+  font-family: 'Nasalization';
+  src: url('/fonts/Nasalization.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+}
+
+/* ─── Keyframe animations ────────────────────────────────────────────────────
+   These stay in CSS because Tailwind can't define @keyframes in class names.
+   They are referenced via Tailwind's arbitrary animate-[…] syntax in JSX:
+     animate-[hero-dot-pulse_2s_ease-in-out_infinite]
+     animate-[hero-scroll-bounce_2.4s_ease-in-out_infinite]
+     animate-[hero-ring-spin_24s_linear_infinite]
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes hero-dot-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+@keyframes hero-scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0);    opacity: 0.35; }
+  50%       { transform: translateX(-50%) translateY(6px); opacity: 0.65; }
+}
+
+@keyframes hero-ring-spin {
+  from { transform: rotate(0deg)   rotateX(60deg); }
+  to   { transform: rotate(360deg) rotateX(60deg); }
 }

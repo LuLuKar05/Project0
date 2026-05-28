@@ -26,9 +26,7 @@ import type { ProjectGetPayload } from './generated/prisma/models/Project';
 import type { OrbitConfigModel }  from './generated/prisma/models/OrbitConfig';
 import type { PlanetVisualModel } from './generated/prisma/models/PlanetVisual';
 
-// ─────────────────────────────────────────────
-//  Database model types  (no Three.js)
-// ─────────────────────────────────────────────
+//  Database model types  
 
 /**
  * A single portfolio project entry, always fetched with its orbit and visual
@@ -72,22 +70,14 @@ export type PlanetVisual = PlanetVisualModel;
  * non-nullable here.
  */
 export interface PlanetObject {
-  /** The 3-D sphere mesh rendered in the scene */
-  mesh:    THREE.Mesh;
-  /** Source project data (includes orbit and visual relation) */
-  proj:    Project;
-  /** Orbital parameters used for position updates each frame */
-  orbit:   OrbitConfig;
-  /** Visual parameters used for material / animation updates */
-  vis:     PlanetVisual;
-  /** Additive glow sprite attached as child of mesh (active planets only) */
+  mesh:    THREE.Mesh;   //3-D sphere mesh rendered in the scene
+  proj:    Project;      //Project data from db with orbit and visual included (guaranteed non-null for active planets)
+  orbit:   OrbitConfig;  //Orbital parameters (radius, speed, inclination)
+  vis:     PlanetVisual; //Visual parameters (color, texture, etc.)
   glow:    THREE.Sprite | null;
-  /** Current orbital angle in radians — mutated every frame */
   angle:   number;
-  /** The orbit ring line rendered beneath the planet */
-  ring:    THREE.Line;
-  /** DOM element for the always-on mini text label (set by miniLabels.ts) */
-  labelEl: HTMLElement | null;
+  ring:    THREE.Line;   // Orbital ring rendered in the scene
+  labelEl: HTMLElement | null;    //Used for hover labels.
 }
 
 /**

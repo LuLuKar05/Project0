@@ -21,12 +21,12 @@
 'use client';
 
 import React from 'react';
-import {type Projects} from '@/hooks/useProjects';
+import {Project} from '@/lib/types';
 
 
 //Properties Structure of this component
 interface DetailPanelProps {
-  project: Projects | null;
+  project: Project | null;
   //Handler functions for the back button and prev/next navigation buttons. 
   //These are passed down from the parent component (Galaxy/projects) which manages the selected project state and camera controls.
   onClose: () => void;
@@ -64,8 +64,8 @@ export default function DetailPanel({ project, onClose, onPrev, onNext }: Detail
           {/* Title */}
           <h2 className="dp-ttl">{project.title}</h2>
 
-          {/* Year */}
-          <div className="dp-yr">{project.date}</div>
+          {/* Year — project.date is a Date object from Prisma; extract the year */}
+          <div className="dp-yr">{new Date(project.date).getFullYear()}</div>
 
           {/* Full description */}
           <p className="dp-desc">{project.fullDesc || project.shortDesc}</p>
