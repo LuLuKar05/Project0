@@ -15,8 +15,8 @@
  */
 
 import { NextResponse }        from 'next/server'
-import { validatePostProject } from './schema'
-import { createProject }       from './service'
+import { validateProjectInput } from '@/schemas/validateProjectsInput'
+import { createProject }       from '@/services/createProject'
 
 export async function POST(req: Request) {
 
@@ -54,12 +54,12 @@ export async function POST(req: Request) {
   }
 
   // ── 3. Validate ──────────────────────────────────────────────────────────────
-  const validation = validatePostProject(body)
+  const validation = validateProjectInput(body)
   if (!validation.ok) {
     return NextResponse.json(
       {
         success: false,
-        error:   'VALIDATION_ERROR',
+        error:   'INVALID_INPUT',
         field:   validation.field,
         message: validation.message,
       },

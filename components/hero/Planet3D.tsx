@@ -174,54 +174,13 @@ function buildScene(preset:PlanetPreset, R:number, backgroundMode: boolean): Sce
   pivot.add(sphere);
   scene.add(pivot);
 
-  // ── Atmosphere layers ────────────────────────────────────────────────────
-  ///const atmMult = backgroundMode ? 0 : 1.0;
-
-  //const atmGeo = new THREE.SphereGeometry(R * 1.055, 64, 48);
-  // const atmMat = new THREE.MeshStandardMaterial({
-  //   color:       preset.atmosphereColor,
-  //   transparent: true,
-  //   opacity:     preset.atmosphereOpacity * atmMult,
-  //   side:        THREE.BackSide,
-  //   depthWrite:  false,
-  //   roughness:   1.0,
-  //   metalness:   0.0,
-  // });
-  // pivot.add(new THREE.Mesh(atmGeo, atmMat));
-
-  // const haloGeo = new THREE.SphereGeometry(R * 1.14, 48, 36);
-  // const haloMat = new THREE.MeshStandardMaterial({
-  //   color:       preset.atmosphereColor,
-  //   transparent: true,
-  //   opacity:     preset.atmosphereOpacity * 0.45 * (backgroundMode ? 1.7 : 1.0),
-  //   side:        THREE.FrontSide,
-  //   depthWrite:  false,
-  //   roughness:   1.0,
-  //   metalness:   0.0,
-  // });
-  // pivot.add(new THREE.Mesh(haloGeo, haloMat));
-
-  // // Extra outer halo — background mode only (bleeds into the starfield)
-  // if (backgroundMode) {
-  //   const outerGeo = new THREE.SphereGeometry(R * 1.30, 40, 30);
-  //   const outerMat = new THREE.MeshStandardMaterial({
-  //     color:       preset.atmosphereColor,
-  //     transparent: true,
-  //     opacity:     preset.atmosphereOpacity * 0.20,
-  //     side:        THREE.FrontSide,
-  //     depthWrite:  false,
-  //     roughness:   1.0,
-  //     metalness:   0.0,
-  //   });
-  //   pivot.add(new THREE.Mesh(outerGeo, outerMat));
-  // }
-
   return { scene, camera, pivot, sphere, material};
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function Planet3D({
+  //Default Properties
   size           = 100,
   rotationSpeed,
   backgroundMode = true,
