@@ -25,6 +25,9 @@ import type * as THREE from 'three';
 import type { ProjectGetPayload } from './generated/prisma/models/Project';
 import type { OrbitConfigModel }  from './generated/prisma/models/OrbitConfig';
 import type { PlanetVisualModel } from './generated/prisma/models/PlanetVisual';
+import type {TagModel} from './generated/prisma/models/Tag';
+import type { SkillCategoryModel } from './generated/prisma/models/SkillCategory';
+import type { SkillModel } from './generated/prisma/models/Skill';
 
 //  Database model types  
 
@@ -43,6 +46,7 @@ export type Project = ProjectGetPayload<{
   include: {
     orbit:  true;
     visual: true;
+    tags:    true; 
   };
 }>;
 
@@ -51,11 +55,10 @@ export type Project = ProjectGetPayload<{
  * All angles are in radians; speeds in radians per second.
  */
 export type OrbitConfig = OrbitConfigModel;
-
-/**
- * Visual styling preset for one planet mesh.
- */
 export type PlanetVisual = PlanetVisualModel;
+export type Tag = TagModel;
+export type SkillCategory = SkillCategoryModel;
+export type Skill = SkillModel;
 
 // ─────────────────────────────────────────────
 //  Runtime Three.js types  (not serialisable)

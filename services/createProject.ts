@@ -62,7 +62,9 @@ export async function createProject(input:ValidatedProjectInput): Promise<Servic
                 date: new Date(input.date),
                 shortDesc: input.shortDesc,
                 fullDesc: input.fullDesc,
-                tags: input.tags,
+                tags: input.tagIds?{
+                    connect: input.tagIds.map(id => ({ id }))
+                }: undefined,
                 order,
                 active: true,
                 githubURL: input.githubURL,
@@ -73,6 +75,7 @@ export async function createProject(input:ValidatedProjectInput): Promise<Servic
             include: {
                 orbit: true,
                 visual: true,
+                tags: true,
             },
         })
         return {

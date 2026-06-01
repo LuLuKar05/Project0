@@ -8,6 +8,7 @@
         include: {
           orbit:  true,
           visual: true,
+          tags:    true, 
         },
         orderBy: { order: 'asc' },
       })

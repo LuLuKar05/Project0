@@ -1,14 +1,15 @@
 import type { Project } from '@/lib/types'
 
 export type ValidatedProjectInput =
-  Omit<Project, 'id'|'slug'|'createdAt' | 'updatedAt' | 'orbit' | 'visual' | 'active'> & {
-    active?: boolean
+  Omit<Project, 'id'|'slug'|'createdAt' | 'updatedAt' | 'orbit' | 'visual' | 'active' | 'tags'> & {
+    active?: boolean;
+    tagIds?: number[];
 }
 
 type validatedResult =
   | { ok: true;  data: ValidatedProjectInput }
   | { ok: false; field: string; error: string; message: string }
-  
+
 //Helper Function 
 const isNonEmptyString = (v: unknown): v is string =>
     typeof v === 'string' && v.trim().length > 0
@@ -52,8 +53,19 @@ export function validateProjectInput(body: any): validatedResult {
     }
     //NEED TO IMPLEMENT: Tag validation.
     /**
+     *
      * Tag Validation Code.
      */
+    if(body.tagIds != null){
+        if(!Array.isArray(body.tagIds) || !body.tagIds.every((id: unknown) => typeof id === 'number' && Number.isInteger(id) && id > 0)){
+            return {
+                ok: false,
+                field: 'tagIds',
+                error: 'INVALID_INPUT',
+                message: 'tagIds must be an array of positive integers.'
+            }
+        }
+    }
 
     //OPTION: Order validation
     if(body.order != null){
@@ -92,10 +104,10 @@ export function validateProjectInput(body: any): validatedResult {
             date: new Date(parsedDate),
             shortDesc: body.shortDesc.trim(),
             fullDesc: body.fullDesc.trim(),
-            tags: Array.isArray(body.tags) ? body.tags.map((tag: unknown) => String(tag).trim()).filter((tag: string) => tag.length > 0) : [],
             order: body.order,
             githubURL: body.githubURL?.trim() || null,
             deployedURL: body.deployedURL?.trim() || null,
+            tagIds: Array.isArray(body.tagIds) ? body.tagIds.map(Number).filter((n: number) => Number.isFinite(n) && n > 0) : [],
         }
     }
 

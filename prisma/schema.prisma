@@ -18,7 +18,7 @@ model Project {
   // ── Content ───────────────────────────────────────────────────────────────
   shortDesc     String
   fullDesc      String
-  tags          String[]
+  tags          Tag[] 
 
   // ── Links (null = private / not deployed) ─────────────────────────────────
   githubURL     String?
@@ -75,4 +75,38 @@ model ContactMessage {
   message       String
 
   createdAt     DateTime @default(now())
+}
+
+model Tag{
+  id            Int @id @default(autoincrement())
+  name          String @unique
+  category      String //@index has to put the index for this field(not sure where in the application code or db) to query tags by category
+  color         String  //This is the color code for the tag, e.g. "#FF5733"
+
+  projects       Project[] 
+  //fast indexing based on the category field, since we'll often query tags by category to display them in the UI.
+  @@index([category])
+
+  //projectTags   ProjectTag[] //one-to-many relationship with ProjectTag model
+}
+
+model SkillCategory{
+  id            String @id @default(uuid())
+  name          String @unique   //Like the System name.
+  skills        Skill[]          //one-to-many relationship with Skill model
+  displayOrder  Int @default(0)
+  //Timestamps 
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Skill{
+  id            String @id @default(uuid())
+  name          String
+  categoryId    String
+  category      SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  //Timestamps 
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([categoryId])
 }

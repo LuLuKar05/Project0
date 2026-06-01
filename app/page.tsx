@@ -25,6 +25,8 @@
  */
 
 import HeroSection from '@/components/heroSection';
+import SkillsSection from '../components/SkillsSection';
+import ContactSection from '@/components/ContactSection';
 
 export default function HomePage() {
   return (
@@ -49,6 +51,8 @@ export default function HomePage() {
           Galaxy sector — loading…
         </p>
       </section>
+      <SkillsSection />
+      <ContactSection />
 
     </main>
   );

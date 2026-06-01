@@ -41,7 +41,7 @@ interface DetailPanelProps {
  */
 export default function DetailPanel({ project, onClose, onPrev, onNext }: DetailPanelProps) {
   const isVisible = project !== null;
-
+  // const tags = (project as (Project & { tags?: string[] }) | null)?.tags ?? [];
   return (
     <div
       id="detail-panel"
@@ -72,15 +72,15 @@ export default function DetailPanel({ project, onClose, onPrev, onNext }: Detail
 
           {/* Tech stack label */}
           <div className="dp-tl">Tech Stack</div>
-
+          
           {/* Tech stack chips */}
           <div className="dp-tags">
-            {project.tags.map((tag) => (
-              <span key={tag} className="dp-tag">
-                {tag}
-              </span>
-            ))}
+          {project.tags.map((tag) => (
+            <span key={tag.id} className="dp-tag" style={{ backgroundColor: tag.color }}>
+              {tag.name}
+            </span>))}
           </div>
+
 
           {/* External links section */}
           <div className="dp-links">
