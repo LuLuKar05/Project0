@@ -30,7 +30,6 @@
 import { useEffect, useState } from 'react';
 import Planet3D from './hero/Planet3D';
 import { useStarfield } from './StarfieldProvider';
-
 // ─── constants ─────────────────────────────────────────────────────────────────
 
 const WARP_DURATION_MS = 1_200;
@@ -50,18 +49,17 @@ function calcPlanetSize(w: number): number {
   let s: number;
   if      (w < 480)  s = Math.round(w * 0.58);
   else if (w < 768)  s = Math.round(w * 0.45);
-  else if (w < 1024) s = Math.round(w * 0.94);
-  else if (w < 1280) s = Math.round(w * 0.80);
-  else               s = Math.min(Math.round(w * 0.17), 320);
-  return Math.max(s, 600);
+  else if (w < 1024) s = Math.round(w * 0.52);
+  else if (w < 1280) s = Math.round(w * 0.52);   // laptop  → ~440–535 px
+  else               s = Math.min(Math.round(w * 0.45), 800); // desktop → up to 800 px
+  return Math.max(s, 100);
 }
 
 // ─── component ─────────────────────────────────────────────────────────────────
 
 export default function HeroSection() {
   const handleExplore = useExploreHandler();
-  const [planetSize, setPlanetSize] = useState(600);
-
+  const [planetSize, setPlanetSize] = useState(800);
   useEffect(() => {
     const update = () => setPlanetSize(calcPlanetSize(window.innerWidth));
     update();

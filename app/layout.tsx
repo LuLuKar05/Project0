@@ -33,7 +33,7 @@ export default function RootLayout({
         <StarfieldProvider>
           <AppShell>
             {children}
-          </AppShell>
+          </AppShell> 
         </StarfieldProvider>
       </body>
     </html>

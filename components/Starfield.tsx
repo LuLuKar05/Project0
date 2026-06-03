@@ -90,28 +90,11 @@ const BASE_SPEED = 0;
 /** How strongly scroll velocity feeds into warp speed. */
 const SCROLL_MULTIPLIER = 0.00055;
 
-/** How strongly mouse movement velocity feeds into warp speed.
- *  Kept very small so casual mouse movement only causes a subtle shimmer. */
-const MOUSE_WARP_MULT = 0.00008;
-
 /**
  * The warpSpeed value at which warpFactor reaches 1 (full hyperspace streaks).
  * Lower = streaks appear at slower scroll; higher = needs aggressive scrolling.
  */
 const WARP_THRESHOLD = 0.04;
-
-/**
- * How far the projection centre shifts toward the mouse position.
- * Expressed as a fraction of the half-screen width/height.
- * 0 = no tilt effect; 1 = projection centre tracks the mouse exactly.
- */
-const TILT_STRENGTH = 0.06;
-
-/**
- * Linear-interpolation factor for the tilt smoothing each frame.
- * Low (0.02) = sluggish, cinematic pan.  High (0.15) = snappy.
- */
-const TILT_LERP = 0.06;
 
 /**
  * Per-frame multiplicative decay applied to warpSpeed.
@@ -464,40 +447,23 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
       // ── interaction state ──────────────────────────────────────────────────
       let scrollY     = 0;
       let lastScrollY = 0;
-      let warpSpeed   = 0; // accumulated warp from scroll + mouse; decays each frame
-
-      // Mouse position — initialised to screen centre so tilt starts neutral
-      let mouseX     = window.innerWidth  / 2;
-      let mouseY     = window.innerHeight / 2;
-      let lastMouseX = mouseX;
-      let lastMouseY = mouseY;
-
-      // Smoothed tilt offsets added to the projection centre (cx, cy)
-      let tiltX = 0;
-      let tiltY = 0;
+      let warpSpeed   = 0;
 
       let meteor: Meteor | null = null;
-      let nextMeteorIn          = Math.random() * 6000 + 4000; // ms until first meteor
+      let nextMeteorIn          = Math.random() * 6000 + 4000;
       let lastTime              = performance.now();
       let raf: number;
 
       // ── event listeners ────────────────────────────────────────────────────
-      // passive: true tells the browser these handlers never call preventDefault,
-      // allowing it to process scroll/touch without waiting for the JS handler.
-      const onScroll    = () => { scrollY = window.scrollY; };
-      const onMouseMove = (e: MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY; };
+      const onScroll = () => { scrollY = window.scrollY; };
 
       const resize = () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
-        camera = makeCamera(); // recreate camera to match new viewport dimensions
-        // Re-centre mouse so tilt doesn't jump after a resize
-        mouseX = window.innerWidth  / 2;
-        mouseY = window.innerHeight / 2;
+        camera = makeCamera();
       };
 
-      window.addEventListener('scroll',    onScroll,    { passive: true });
-      window.addEventListener('mousemove', onMouseMove, { passive: true });
-      window.addEventListener('resize',    resize);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', resize);
 
       // ── main animation loop ────────────────────────────────────────────────
       function tick(now: number) {
@@ -510,31 +476,16 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
         const H   = window.innerHeight;
         const fov = W * 0.85; // field-of-view scalar: wider screens feel more immersive
 
-        // ── tilt ─────────────────────────────────────────────────────────────
-        // Normalise mouse position to −1…+1 relative to screen centre.
-        // Lerp the tilt offsets toward the target each frame for smooth motion.
-        const nMX = (mouseX - W / 2) / (W / 2);
-        const nMY = (mouseY - H / 2) / (H / 2);
-        tiltX += (nMX * W * TILT_STRENGTH - tiltX) * TILT_LERP;
-        tiltY += (nMY * H * TILT_STRENGTH - tiltY) * TILT_LERP;
+        // Projection centre — fixed at screen centre, no mouse tilt.
+        const cx = W / 2;
+        const cy = H / 2;
 
-        // Projection centre — stars radiate outward from here.
-        // Shifting it with tilt gives a "looking around" parallax feel.
-        const cx = W / 2 + tiltX;
-        const cy = H / 2 + tiltY;
-
-        // ── warp speed calculation ────────────────────────────────────────────
-        // Both scroll delta and mouse-movement delta feed warpSpeed.
-        // warpSpeed decays WARP_DECAY × each frame so it trails off naturally.
+        // ── warp speed — scroll only ──────────────────────────────────────────
         const scrollDelta = scrollY - lastScrollY;
         lastScrollY = scrollY;
-        const mouseDelta = Math.hypot(mouseX - lastMouseX, mouseY - lastMouseY);
-        lastMouseX = mouseX;
-        lastMouseY = mouseY;
 
         warpSpeed = warpSpeed * WARP_DECAY
-          + Math.abs(scrollDelta) * SCROLL_MULTIPLIER
-          + mouseDelta            * MOUSE_WARP_MULT;
+          + Math.abs(scrollDelta) * SCROLL_MULTIPLIER;
 
         // ── warp factor & speed ───────────────────────────────────────────────
         // If a manual override has been set via setWarp(), use it directly.
@@ -763,9 +714,8 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
       // of every Three.js resource so the GPU memory is freed immediately.
       return () => {
         cancelAnimationFrame(raf);
-        window.removeEventListener('scroll',    onScroll);
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('resize',    resize);
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', resize);
 
         renderer.dispose();
         starGeo.dispose();  starMat.dispose();

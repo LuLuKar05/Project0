@@ -36,22 +36,22 @@ export default function HomePage() {
       <HeroSection />
 
       {/* ── Section 2: Galaxy (placeholder — Three.js canvas mounts here) ── */}
-      <section
+      {/* <section
         id="galaxy-section"
         className="relative min-h-screen flex items-center justify-center"
         aria-label="Project galaxy"
-      >
+      > */}
         {/*
          * TODO: Mount the Galaxy component here once it is built.
          * The Three.js renderer will attach its canvas to this section.
          * SidebarNav, HoverLabel, DetailPanel and MiniLabels all live
          * inside (or alongside) this section.
          */}
-        <p className="text-white/20 font-mono text-sm tracking-widest uppercase">
+        {/* <p className="text-white/20 font-mono text-sm tracking-widest uppercase">
           Galaxy sector — loading…
         </p>
-      </section>
-      <SkillsSection />
+      </section> */}
+      {/* <SkillsSection /> */}
       <ContactSection />
 
     </main>
