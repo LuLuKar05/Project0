@@ -69,11 +69,12 @@ model PlanetVisual {
 
 model ContactMessage {
   id            String   @id @default(uuid())
-  firstName     String
-  lastName      String
+  name          String
+  org           String
+  type          String
   email         String
   message       String
-
+  emailSent     Boolean  @default(false)
   createdAt     DateTime @default(now())
 }
 

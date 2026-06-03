@@ -1,65 +1,89 @@
-'use client'
-import React from 'react'
-import {useState} from "react";
+'use client';
 import Input from './Input';
+import FormSubmissionSuccess from './FormSubmissionSuccess';
+import { useContactForm } from '@/hooks/useContactForm';
 
-type InitialContactFormData = {
-    firstName: string;
-    lastName: string;
-    email: string;
-    message: string;
+const CONTRACT_TYPES = ['Full-time role', 'Contract / Freelance', 'Collaboration', 'Other'];
+
+interface Props {
+  onSuccess?: (mailtoUrl: string, name: string, email: string) => void;
 }
 
-export default function ContactMessageForm() {
-  const [formData, setFormData] = useState<InitialContactFormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    message: '',
-  });
-  const handleChange = (field: keyof InitialContactFormData) => (value: string) => {
-    setFormData(prevState => ({
-        ...prevState,
-        [field]: value
-    }));
-  };
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await fetch('/api/v1/contact-submission', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        message: formData.message,
-      }),
-    });
-  };
+export default function ContactMessageForm({ onSuccess }: Props) {
+  const {
+    fields, errors, submitting, submitError, submitted, successData,
+    handleChange, handleBlur, handleSubmit, handleReset,
+  } = useContactForm({ onSuccess });
+
+  if (submitted) {
+    return (
+      <FormSubmissionSuccess
+        name={successData.name}
+        email={successData.email}
+        mailtoUrl={successData.mailto}
+        onReset={handleReset}
+      />
+    );
+  }
+
   return (
-    <div>ContactMessageForm
-        <Input
-          label="First Name"
-          value={formData.firstName}
-          onChange={handleChange('firstName')}
-        />
-        <Input
-          label="Last Name"
-          value={formData.lastName}
-          onChange={handleChange('lastName')}
-        />
-        <Input
-          label="Email"
-          value={formData.email}
-          onChange={handleChange('email')}
-        />
-        <Input
-          label="Message"
-          value={formData.message}
-          onChange={handleChange('message')}
-        />
-    </div>
-  )
+    <form onSubmit={handleSubmit} noValidate>
+      <Input
+        label="Name"
+        placeholder="Enter your name"
+        value={fields.name}
+        onChange={handleChange('name')}
+        onBlur={handleBlur('name')}
+        error={errors.name || undefined}
+      />
+      <Input
+        label="Client Designation"
+        placeholder="Represented Organization (if applicable)"
+        value={fields.org}
+        onChange={handleChange('org')}
+        onBlur={handleBlur('org')}
+        error={errors.org || undefined}
+      />
+      <Input
+        type="email"
+        label="Comm Channel"
+        placeholder="you@channel.com"
+        value={fields.email}
+        onChange={handleChange('email')}
+        onBlur={handleBlur('email')}
+        error={errors.email || undefined}
+      />
+      <Input
+        type="select"
+        label="Contract Type"
+        options={CONTRACT_TYPES}
+        value={fields.contractType}
+        onChange={handleChange('contractType')}
+      />
+      <Input
+        type="textarea"
+        label="Mission Brief"
+        placeholder="Describe the bounty..."
+        rows={4}
+        value={fields.message}
+        onChange={handleChange('message')}
+        onBlur={handleBlur('message')}
+        error={errors.message || undefined}
+      />
+
+      {submitError && (
+        <p className="mb-3 font-gx-mono text-[11px] tracking-[0.05em] text-error">
+          {submitError}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="ct-btn primary form-submit w-full mt-2"
+        disabled={submitting}
+      >
+        {submitting ? 'Transmitting...' : 'Transmit Contract →'}
+      </button>
+    </form>
+  );
 }

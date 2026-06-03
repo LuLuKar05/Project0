@@ -1,47 +1,108 @@
-'use client'
-import react from "react";
-import {useState} from "react";
+'use client';
 
+interface InputProps {
+  type?:        'text' | 'email' | 'password' | 'number' | 'textarea' | 'select';
+  label?:       string;
+  placeholder?: string;
+  options?:     string[];   // required when type="select"
+  value?:       string;
+  onChange?:    (value: string) => void;
+  error?:       string;
+  success?:     string;
+  disabled?:    boolean;
+  rows?:        number;     // textarea only, default 4
+  onFocus?:     () => void;
+  onBlur?:      () => void;
+}
 
-export default function Input({type, label, placeholder,value, onChange} : {
-                                type?: string,
-                                label?: string,
-                                placeholder?: string,
-                                value?: string,
-                                onChange?: (value: string) => void}) {
-  //When this component is called directly will used the internalState.
-  const [internalValue, setInternalValue] = useState(value ?? ''); //If the state is controlled by the Parent compoent this will be unuse but it use the memory storage. 
-  
-  //Checked both value and onChange eventHandler is passed, if it does it mean is controlled by the parent component. 
-  const isControlled = value !== undefined && onChange !== undefined; 
-  //Check is the value is passed down but not the onChange eventhandler.
-  //it mean provide the read access but not the write access to child compoent.
-  const isReadOnly = value !== undefined && onChange === undefined;
+export default function Input({
+  type = 'text',
+  label,
+  placeholder,
+  options = [],
+  value,
+  onChange,
+  error,
+  success,
+  disabled = false,
+  rows = 4,
+  onFocus,
+  onBlur,
+}: InputProps) {
+  const isControlled = value !== undefined && onChange !== undefined;
 
-  const currentValue = isControlled || isReadOnly ? value : internalValue;
+  const borderClass = error
+    ? 'border-error focus:border-error'
+    : success
+    ? 'border-success focus:border-success'
+    : 'border-[rgba(79,195,247,0.2)] focus:border-gx-bright focus:shadow-[0_0_0_1px_rgba(142,236,255,0.2),0_0_22px_rgba(79,195,247,0.12)]';
 
-  //If the parent compoent set the ValueState but not provide the onChange, the input will be read-only. So we need to check if the onChange is provided before update the internal state.
-  //Need Improvement here.
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>{
-    //will update the internal state.
-    if (!isControlled) {
-      setInternalValue(e.target.value);
-    }
-    //will update the parent state.
-    onChange?.(e.target.value);
+  const fieldClass = [
+    'w-full bg-[rgba(4,12,26,0.7)] border',
+    'text-[#eaf6ff] font-gx-body text-[15px]',
+    'px-[15px] py-[13px] outline-none transition-all duration-300',
+    'placeholder:text-[rgba(142,236,255,0.25)]',
+    disabled ? 'opacity-40 cursor-not-allowed' : '',
+    borderClass,
+  ].join(' ');
+
+  type ChangeEvent = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+  const sharedProps = {
+    placeholder,
+    disabled,
+    onFocus,
+    onBlur,
+    className: fieldClass,
+    ...(isControlled ? { value, onChange: (e: ChangeEvent) => onChange!(e.target.value) } : {}),
   };
+
   return (
-    //Currently if the parent component only provide read-only access. can't make it even interactive. need to add the console message to warn the devloper.
-    
-    <>
-    {label && <label className="block text-white mb-2">{label}</label>}
-    <input
-      type={type || "text"}
-      placeholder={placeholder}
-      value={currentValue}
-      onChange={handleChange}
-      className="w-full py-2 rounded-md bg-secondary ring-2 ring-white text-white focus:outline-none focus:ring-2 focus:ring-primary-header"
-    />
-    </>
-  )
+    <div className="mb-5">
+      {label && (
+        <label className="block font-gx-mono text-[10px] tracking-[0.14em] text-gx-cyan uppercase mb-[9px]">
+          {label}
+        </label>
+      )}
+
+      {type === 'textarea' && (
+        <textarea
+          {...(sharedProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+          rows={rows}
+          style={{ resize: 'vertical', lineHeight: '1.6' }}
+        />
+      )}
+
+      {type === 'select' && (
+        <select
+          {...(sharedProps as React.SelectHTMLAttributes<HTMLSelectElement>)}
+          style={{
+            cursor: 'pointer',
+            appearance: 'none',
+            backgroundImage: `linear-gradient(45deg,transparent 50%,#4FC3F7 50%),linear-gradient(135deg,#4FC3F7 50%,transparent 50%)`,
+            backgroundPosition: 'calc(100% - 18px) center, calc(100% - 13px) center',
+            backgroundSize: '5px 5px, 5px 5px',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
+          {options.map(opt => (
+            <option key={opt} value={opt} style={{ background: '#061020' }}>{opt}</option>
+          ))}
+        </select>
+      )}
+
+      {type !== 'textarea' && type !== 'select' && (
+        <input
+          type={type}
+          {...(sharedProps as React.InputHTMLAttributes<HTMLInputElement>)}
+        />
+      )}
+
+      {error && (
+        <p className="mt-[6px] font-gx-mono text-[10px] tracking-[0.05em] text-error">{error}</p>
+      )}
+      {success && !error && (
+        <p className="mt-[6px] font-gx-mono text-[10px] tracking-[0.05em] text-success">{success}</p>
+      )}
+    </div>
+  );
 }

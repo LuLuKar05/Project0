@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import SkillsGrid from '@/components/skillsCard';
+import {SkillCategory} from '@/components/skillsCard';
 
 interface StarData {
   x: number;
@@ -15,6 +16,7 @@ interface StarData {
 
 export default function SkillsSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [categories, setCategories] = useState<SkillCategory[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,6 +66,17 @@ export default function SkillsSection() {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/v1/getSkills')
+      .then((response) => response.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching skills:', error);
+      });
   }, []);
 
   return (
@@ -121,7 +134,7 @@ export default function SkillsSection() {
           Every cluster a constellation of mastered systems — charted across the same sector as the missions.
         </p>
 
-        <SkillsGrid />
+        <SkillsGrid categories={categories} />
       </div>
 
       {/* Footer */}

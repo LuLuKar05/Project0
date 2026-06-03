@@ -8,15 +8,16 @@ export async function GET() {
                 skills: {
                     select: {
                         name: true,
-                    }
+                    },
+                    orderBy: { 
+                        createdAt: 'asc' 
+                    },
                 }
             },
         });
-        const result = categories.map(category => ({
-            name: category.name,
-            skills: category.skills.map(skill => ({
-                name: skill.name,
-            }))
+        const result = categories.map((category) => ({
+            name:   category.name,
+            skills: category.skills.map(skill => skill.name),
         }));
         return NextResponse.json(result);
     }catch(error){

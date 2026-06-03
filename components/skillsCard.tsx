@@ -6,7 +6,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 
 export interface SkillCategory {
   name: string;
-  code: string;
   skills: string[];
 }
 
@@ -25,15 +24,6 @@ interface ConstellationLink {
 
 /* ── Default skill data ─────────────────────────────────────────────────────── */
 // Replace this array (or pass a `categories` prop) to change what the grid shows.
-
-const SKILL_CATEGORIES: SkillCategory[] = [
-  { name: 'Languages', code: 'SYS-01', skills: ['Python', 'JavaScript', 'TypeScript', 'Solidity', 'HTML / CSS'] },
-  { name: 'Frontend',  code: 'SYS-02', skills: ['React 19', 'Next.js 16', 'Tailwind', 'App Router'] },
-  { name: 'Backend',   code: 'SYS-03', skills: ['Node.js', 'Express', 'FastAPI', 'MongoDB', 'SQLite'] },
-  { name: 'AI / ML',   code: 'SYS-04', skills: ['LangGraph', 'Gemini', 'FLock LLM', 'Multi-Agent'] },
-  { name: 'Web3',      code: 'SYS-05', skills: ['Ethereum', 'Concordium', 'Smart Contracts', 'DeFi'] },
-  { name: 'DevOps',    code: 'SYS-06', skills: ['Git', 'Docker', 'JWT', 'Playwright', 'Monorepo'] },
-];
 
 /* ── SVG layout constants ───────────────────────────────────────────────────── */
 
@@ -175,7 +165,6 @@ function SkillCategoryCard({ category, index }: SkillCategoryCardProps) {
       {/* Card header */}
       <div className="flex flex-col gap-1 mb-2">
         <span className="text text-nasalization text-white/55">{category.name}</span>
-        <span className="mod-code">{category.code}</span>
       </div>
       <div className="mod-count">{category.skills.length} systems online</div>
 
@@ -237,15 +226,15 @@ function SkillCategoryCard({ category, index }: SkillCategoryCardProps) {
 // SKILL_CATEGORIES above. The grid renders one SkillCategoryCard per entry.
 
 interface SkillsGridProps {
-  categories?: SkillCategory[];
+  categories: SkillCategory[];
 }
 
-export default function SkillsGrid({ categories = SKILL_CATEGORIES }: SkillsGridProps) {
+export default function SkillsGrid({ categories }: SkillsGridProps) {
   return (
     <div className="grid" id="grid">
       {categories.map((category, index) => (
         <SkillCategoryCard
-          key={category.code}
+          key={category.name}
           category={category}
           index={index}
         />

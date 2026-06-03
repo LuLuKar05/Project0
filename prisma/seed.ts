@@ -198,7 +198,7 @@ async function main() {
       data: {
         name:         cat.name,
         displayOrder: cat.displayOrder,
-        skills:       { create: cat.skills.map(name => ({ name, description: '' })) },
+        skills:       { create: cat.skills.map(name => ( {name })) },
       },
     })
   }

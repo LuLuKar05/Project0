@@ -1,40 +1,15 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import ContactMessageForm from './ui/ContactMessageForm';
 
 interface StarData {
   x: number; y: number; r: number; vy: number; a: number; tw: number;
 }
-interface FormFields {
-  name: string; email: string; type: string; brief: string;
-}
-interface FormErrors {
-  name: boolean; email: boolean; brief: boolean;
-}
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CONTACT_EMAIL = 'mmyat1137@gmail.com';
-
-const BOUNTIES = [
-  { title: 'Drift Land 154',  desc: 'Enterprise event management & ticketing platform with real-time QR validation.', meta: '2026 · Platform' },
-  { title: 'NutriShield',     desc: 'Zero-knowledge biodefense assistant with threat-adapted meal planning.',          meta: '2026 · AI'       },
-  { title: 'Afterverse',      desc: 'Multi-agent automation of post-death legal workflows.',                           meta: '2025 · 1st Place' },
-  { title: 'VeriLoan',        desc: 'Under-collateralized lending via cross-chain cryptographic identity.',            meta: '2025 · Web3'     },
-];
-const COMMENDATIONS = [
-  { title: 'UCL AgentVerse — 1st Place',  desc: 'Multi-agent AI · 700 participants.',    meta: '2026' },
-  { title: 'Encode Hackathon — Dual Prize', desc: 'DeFi identity · cross-chain protocol.', meta: '2025' },
-];
-const ARSENAL = ['Python','TypeScript','React','Next.js','Node.js','FastAPI','LangGraph','Solidity','Ethereum','MongoDB','Docker'];
 
 export default function ContactSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [activeModal, setActiveModal]   = useState<'dossier' | 'message' | null>(null);
-  const [revealed, setRevealed]         = useState(false);
-  const [fields, setFields]             = useState<FormFields>({ name: '', email: '', type: 'Full-time role', brief: '' });
-  const [errors, setErrors]             = useState<FormErrors>({ name: false, email: false, brief: false });
-  const [formSuccess, setFormSuccess]   = useState(false);
-  const [successDetail, setSuccessDetail] = useState('');
-  const [mailtoHref, setMailtoHref]     = useState('#');
+  const [activeModal, setActiveModal]     = useState<'dossier' | 'message' | null>(null);
+  const [revealed, setRevealed]           = useState(false);
 
   /* Background starfield */
   useEffect(() => {
@@ -111,29 +86,7 @@ export default function ContactSection() {
   }, [activeModal]);
 
   function openMessage() {
-    if (formSuccess) {
-      setFormSuccess(false);
-      setFields({ name: '', email: '', type: 'Full-time role', brief: '' });
-      setErrors({ name: false, email: false, brief: false });
-    }
     setActiveModal('message');
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const next: FormErrors = {
-      name:  !fields.name,
-      email: !EMAIL_RE.test(fields.email),
-      brief: !fields.brief,
-    };
-    setErrors(next);
-    if (next.name || next.email || next.brief) return;
-
-    const subject = `[Guild Contract] ${fields.type} — ${fields.name}`;
-    const body    = `Client Designation: ${fields.name}\nComm Channel: ${fields.email}\nContract Type: ${fields.type}\n\nMission Brief:\n${fields.brief}`;
-    setMailtoHref(`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    setSuccessDetail(`Contract logged for ${fields.name}. The hunter will respond to ${fields.email} within 24 hours.`);
-    setFormSuccess(true);
   }
 
   const cls = revealed ? 'in' : '';
@@ -173,32 +126,20 @@ export default function ContactSection() {
           A full-stack bounty hunter for hire — tracking down complex problems across AI, privacy, and decentralized space. Review the dossier, open a comm channel, or transmit a contract.
         </p>
 
-        {/* Hunter Creed */}
-        <div className={`creed ${cls}`}>
-          <span className="crn tl" /><span className="crn tr" /><span className="crn bl" /><span className="crn br" />
-          <div className="creed-status"><span className="dot" /> Available for Contracts</div>
-          <span className="creed-mark">&ldquo;</span>
-          <div className="creed-quote">
-            Point me at the <span className="acc">impossible</span> — I&apos;ll bring it back <span className="acc">shipped</span>, signed, and ahead of schedule.
-          </div>
-          <div className="creed-attr">
-            <span className="ln" /> The Hunter&apos;s Creed · Sector 07 <span className="ln" />
-          </div>
-        </div>
 
         {/* Comm Channels */}
         <div className={`channels ${cls}`}>
-          <a className="chan" href="https://www.linkedin.com/in/MyoMyatThiha" target="_blank" rel="noopener noreferrer">
+          <a className="chan" href={process.env.NEXT_PUBLIC_LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" strokeWidth="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="7.5" y1="10.5" x2="7.5" y2="17"/><circle cx="7.5" cy="7" r="0.6" fill="currentColor" stroke="none"/><path d="M11 17v-3.5a2 2 0 0 1 4 0V17"/><line x1="11" y1="10.5" x2="11" y2="17"/></svg>
             <span className="chan-label">LinkedIn</span>
             <span className="chan-sub">/MyoMyatThiha</span>
           </a>
-          <a className="chan" href="https://github.com/LuLuKar05" target="_blank" rel="noopener noreferrer">
+          <a className="chan" href={process.env.NEXT_PUBLIC_GITHUB_URL} target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" strokeWidth="1.6"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
             <span className="chan-label">GitHub</span>
             <span className="chan-sub">/LuLuKar05</span>
           </a>
-          <a className="chan" href={`mailto:${CONTACT_EMAIL}`}>
+          <a className="chan" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`} target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 7l9 6 9-6"/></svg>
             <span className="chan-label">Email</span>
             <span className="chan-sub">Direct Signal</span>
@@ -227,75 +168,31 @@ export default function ContactSection() {
         className={`modal-overlay ${activeModal === 'dossier' ? 'open' : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
       >
-        <div className="modal" style={{ maxWidth: 760 }}>
+        <div className="modal" style={{ maxWidth: 990, height: '900vh' }}>
           <button className="modal-close" onClick={() => setActiveModal(null)}>✕</button>
-          <div className="dossier-inner">
-            <div className="dossier-head">
-              <div>
-                <div className="dossier-name">MYO MYAT THIHA</div>
-                <div className="dossier-role">FULL-STACK BOUNTY HUNTER · GUILD ID #LK-05</div>
-              </div>
-              <div className="dossier-stamp">★ Classified Dossier</div>
-            </div>
-
-            <div className="d-sec">
-              <div className="d-sec-title">Field Summary</div>
-              <p className="d-bio">BSc Computing hunter operating at the intersection of AI, privacy, and decentralized technology. Predicted First-Class Honours (77% avg) at Coventry University. Multiple hackathon victories across UCL, Imperial, and Encode. Builds production systems from the ground up — and closes contracts fast.</p>
-            </div>
-
-            <div className="d-sec">
-              <div className="d-sec-title">Bounties Closed</div>
-              {BOUNTIES.map((b) => (
-                <div key={b.title} className="d-row">
-                  <div className="d-row-main">
-                    <div className="d-row-t">{b.title}</div>
-                    <div className="d-row-d">{b.desc}</div>
-                  </div>
-                  <div className="d-row-meta">{b.meta}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="d-sec">
-              <div className="d-sec-title">Commendations</div>
-              {COMMENDATIONS.map((c) => (
-                <div key={c.title} className="d-row">
-                  <div className="d-row-main">
-                    <div className="d-row-t">{c.title}</div>
-                    <div className="d-row-d">{c.desc}</div>
-                  </div>
-                  <div className="d-row-meta">{c.meta}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="d-sec">
-              <div className="d-sec-title">Training</div>
-              <div className="d-row">
-                <div className="d-row-main">
-                  <div className="d-row-t">BSc Computing</div>
-                  <div className="d-row-d">Coventry University · Predicted First-Class Honours.</div>
-                </div>
-                <div className="d-row-meta">77% avg</div>
-              </div>
-            </div>
-
-            <div className="d-sec">
-              <div className="d-sec-title">Arsenal</div>
-              <div className="d-arsenal">
-                {ARSENAL.map((tag) => <span key={tag} className="d-tag">{tag}</span>)}
-              </div>
-            </div>
-
+            <iframe
+            src={process.env.NEXT_PUBLIC_DOSSIER_URL}
+            title="Resume"
+            className="w-full h-full px-10 py-10 bg-white/5 backdrop-blur-sm"
+            style={{ border: 'none', display: 'block' }}
+            />
             <div className="dossier-foot">
-              <a className="ct-btn primary" href={`mailto:${CONTACT_EMAIL}`}>Recruit the Hunter</a>
-              <button className="ct-btn" onClick={() => window.print()}>Download Dossier</button>
+              <a className="ct-btn primary" href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}`}>Recruit the Hunter</a>
+              <a
+                className="ct-btn"
+                href={process.env.NEXT_PUBLIC_DOSSIER_URL}
+                download="MyoMyatThiha_Resume.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download Resume
+              </a>
             </div>
-          </div>
         </div>
       </div>
 
       {/* ── Message Modal ── */}
+      {/* This would be great to used the Form Component */}
       <div
         className={`modal-overlay ${activeModal === 'message' ? 'open' : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
@@ -303,51 +200,9 @@ export default function ContactSection() {
         <div className="modal" style={{ maxWidth: 560 }}>
           <button className="modal-close" onClick={() => setActiveModal(null)}>✕</button>
           <div className="form-inner">
-            {!formSuccess ? (
-              <>
-                <div className="form-title">Transmit a Contract</div>
-                <p className="form-sub">Brief the hunter on your mission. All transmissions are received on a secure channel.</p>
-                <form onSubmit={handleSubmit} noValidate>
-                  <div className={`field ${errors.name ? 'error' : ''}`}>
-                    <label htmlFor="in-name">Client Designation</label>
-                    <input id="in-name" type="text" placeholder="Your name or org"
-                      value={fields.name} onChange={(e) => setFields({ ...fields, name: e.target.value })} />
-                    <div className="err-msg">Designation required.</div>
-                  </div>
-                  <div className={`field ${errors.email ? 'error' : ''}`}>
-                    <label htmlFor="in-email">Comm Channel</label>
-                    <input id="in-email" type="email" placeholder="you@channel.com"
-                      value={fields.email} onChange={(e) => setFields({ ...fields, email: e.target.value })} />
-                    <div className="err-msg">Valid comm channel required.</div>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="in-type">Contract Type</label>
-                    <select id="in-type" value={fields.type} onChange={(e) => setFields({ ...fields, type: e.target.value })}>
-                      <option>Full-time role</option>
-                      <option>Contract / Freelance</option>
-                      <option>Collaboration</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div className={`field ${errors.brief ? 'error' : ''}`}>
-                    <label htmlFor="in-brief">Mission Brief</label>
-                    <textarea id="in-brief" placeholder="Describe the bounty..."
-                      value={fields.brief} onChange={(e) => setFields({ ...fields, brief: e.target.value })} />
-                    <div className="err-msg">A brief is required.</div>
-                  </div>
-                  <button type="submit" className="ct-btn primary form-submit">Transmit Contract →</button>
-                </form>
-              </>
-            ) : (
-              <div className="form-success">
-                <div className="success-icon">
-                  <svg viewBox="0 0 24 24" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
-                </div>
-                <div className="success-t">Transmission Received</div>
-                <div className="success-d">{successDetail}</div>
-                <a className="ct-btn primary" href={mailtoHref}>Open in Mail Client</a>
-              </div>
-            )}
+            <div className="form-title">Transmit a Contract</div>
+            <p className="form-sub">Brief the hunter on your mission. All transmissions are received on a secure channel.</p>
+            <ContactMessageForm />
           </div>
         </div>
       </div>

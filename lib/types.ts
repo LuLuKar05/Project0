@@ -25,7 +25,8 @@ import type * as THREE from 'three';
 import type { ProjectGetPayload } from './generated/prisma/models/Project';
 import type { OrbitConfigModel }  from './generated/prisma/models/OrbitConfig';
 import type { PlanetVisualModel } from './generated/prisma/models/PlanetVisual';
-import type {TagModel} from './generated/prisma/models/Tag';
+import type { ContactMessageModel } from './generated/prisma/models/ContactMessage';  
+import type { TagModel  } from './generated/prisma/models/Tag';
 import type { SkillCategoryModel } from './generated/prisma/models/SkillCategory';
 import type { SkillModel } from './generated/prisma/models/Skill';
 
@@ -56,6 +57,8 @@ export type Project = ProjectGetPayload<{
  */
 export type OrbitConfig = OrbitConfigModel;
 export type PlanetVisual = PlanetVisualModel;
+export type ContactMessage = ContactMessageModel;
+
 export type Tag = TagModel;
 export type SkillCategory = SkillCategoryModel;
 export type Skill = SkillModel;
