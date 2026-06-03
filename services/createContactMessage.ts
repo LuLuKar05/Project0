@@ -31,11 +31,13 @@ export async function createContactMessage(input: ValidatedContactInput): Promis
             contactMessage
         };
     } catch (error) {
-        console.error('[createContactMessage]', error);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('[createContactMessage]', message);
         return {
             ok: false,
             status: 500,
-            error: 'Failed to create contact message.'
+            error: 'Failed to create contact message.',
+            message,
         };
     }
 }
