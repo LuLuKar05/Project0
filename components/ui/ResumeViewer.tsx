@@ -51,15 +51,18 @@ export default function ResumeViewer({ url, onReady }: Props) {
         loading={null}
       >
         {Array.from({ length: numPages }, (_, i) => (
-          <Page
+          <div
             key={i + 1}
-            pageNumber={i + 1}
-            width={containerWidth || undefined}
-            renderAnnotationLayer={false}
-            renderTextLayer={false}
-            loading={null}
             style={{ display: 'block', marginBottom: i < numPages - 1 ? 8 : 0 }}
-          />
+          >
+            <Page
+              pageNumber={i + 1}
+              width={containerWidth || undefined}
+              renderAnnotationLayer={false}
+              renderTextLayer={false}
+              loading={null}
+            />
+          </div>
         ))}
       </Document>
     </div>
