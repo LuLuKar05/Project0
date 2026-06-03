@@ -1,16 +1,14 @@
 import { Resend } from 'resend';
 import {ValidatedContactInput} from '@/schemas/validateContactInput';
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 
 export async function sendContactEmail(input: ValidatedContactInput): Promise<{ ok: boolean, error?: string }> {
-    //checking the required env variables are there.
     const from = process.env.RESEND_FROM_EMAIL;
     const to = process.env.CONTACT_EMAIL;
-    if (!from || !to) {
-        console.error('RESEND_FROM_EMAIL and CONTACT_EMAIL environment variables must be set for sending contact emails.');
+    if (!from || !to || !process.env.RESEND_API_KEY) {
+        console.error('RESEND_FROM_EMAIL, CONTACT_EMAIL and RESEND_API_KEY environment variables must be set for sending contact emails.');
         return {ok: false, error: 'Email configurations are missing.'};
     }
+    const resend = new Resend(process.env.RESEND_API_KEY);
     try{
         const {error} = await resend.emails.send({
             from,
