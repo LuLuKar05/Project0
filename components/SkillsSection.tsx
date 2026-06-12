@@ -1,35 +1,21 @@
-'use client';
-import { useEffect, useState } from 'react';
-import Head from 'next/head';
+/**
+ * @file components/SkillsSection.tsx
+ * Server Component — receives skill categories as a prop from the page
+ * (fetched server-side via services/getSkills) instead of fetching
+ * client-side. No 'use client' needed: the only interactive part is
+ * SkillsGrid, which declares its own client boundary.
+ */
+
 import SkillsGrid from '@/components/skillsCard';
-import {SkillCategory} from '@/components/skillsCard';
+import type { SkillCategory } from '@/components/skillsCard';
 
-export default function SkillsSection() {
-  const [categories, setCategories] = useState<SkillCategory[]>([]);
+interface SkillsSectionProps {
+  categories: SkillCategory[];
+}
 
-  useEffect(() => {
-    fetch('/api/v1/getSkills')
-      .then((response) => response.json())
-      .then((data) => {
-        setCategories(data);
-      })
-      .catch((error) => {
-        console.error('Error fetching skills:', error);
-      });
-  }, []);
-
+export default function SkillsSection({ categories }: SkillsSectionProps) {
   return (
     <section className="relative">
-      <Head>
-        <title >Systems Arsenal — Myo Myat Thiha</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
-
       {/* Main content */}
       <div className="relative z-[5] w-full mx-auto px-[clamp(24px,5vw,72px)] py-[clamp(64px,9vw,130px)]">
 

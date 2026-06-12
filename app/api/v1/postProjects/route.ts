@@ -15,6 +15,7 @@
  */
 
 import { NextResponse }        from 'next/server'
+import { revalidatePath }       from 'next/cache'
 import { validateProjectInput } from '@/schemas/validateProjectsInput'
 import { createProject }       from '@/services/createProject'
 
@@ -77,6 +78,10 @@ export async function POST(req: Request) {
   }
 
   // ── 5. Created ───────────────────────────────────────────────────────────────
+  // Regenerate the ISR-cached home page so the new project shows up
+  // immediately instead of waiting for the next revalidate window.
+  revalidatePath('/')
+
   return NextResponse.json(
     { success: true, data: result.project },
     { status: 201 },

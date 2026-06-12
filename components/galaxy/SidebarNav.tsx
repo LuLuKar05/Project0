@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
-import useProjects from '@/hooks/useProjects';
+import type { Project } from '@/lib/types';
 
-/* 
+/*
 This is the left-side navBar that lists all the projects.
-use the projects(array of project objects) from the useProjects hook to populate the list. 
+Receives the projects array as a prop — the page fetches it server-side
+(services/getProjects) and passes it down, so there is no client fetch or
+loading state here.
 I added the Upcomiing Missons Section (upcoming projects) which are currently represntes as the dead orbits right now since there isn't much project yet.
 (This is going to be 2 as hardcoded for now and is going to hide if there is more than 20 active projects)
 */
@@ -13,6 +15,8 @@ I added the Upcomiing Missons Section (upcoming projects) which are currently re
 
 // Properties for this component
 interface SidebarNavProps {
+  /** Active projects fetched server-side, in orbit order */
+  projects: Project[];
   /** Index of the currently selected planet (-1 = overview mode) */
   activeIdx: number;
   /** Whether the entry animation has completed (controls visibility) */
@@ -21,16 +25,11 @@ interface SidebarNavProps {
   onSelectProject: (idx: number) => void;
 }
 
-export default function SidebarNav({ activeIdx, revealed, onSelectProject }: SidebarNavProps) {
-  const { projects, loading , error} = useProjects();
-  //currenlty all the projects are going to be active active, but gonna use the filter for consistency and future proofing when we have more projects and want to show only the one of the best projects in the active section. 
-  const activeProjects   = projects?.map((project, i) => ({ project, i})).filter(x => x.project.active);
+export default function SidebarNav({ projects, activeIdx, revealed, onSelectProject }: SidebarNavProps) {
+  //currenlty all the projects are going to be active active, but gonna use the filter for consistency and future proofing when we have more projects and want to show only the one of the best projects in the active section.
+  const activeProjects   = projects.map((project, i) => ({ project, i })).filter(x => x.project.active);
   // Will be 2 for now, if there is more than 20 projects in atcive section, going to hide the dead orbits.
-  const inactiveProjects = activeProjects && activeProjects.length > 20 ? 0 : 2; // if 20+ active, hide dead orbits to save space; otherwise show 2 dead orbits
-
-  //Handling the Loading and Error State for fetching the projects, but this is going to be replaced with the skeleton loader and custom error component later on.
-  {loading && <div>Loading projects...</div>}
-  {error && <div>Error loading projects</div>}
+  const inactiveProjects = activeProjects.length > 20 ? 0 : 2; // if 20+ active, hide dead orbits to save space; otherwise show 2 dead orbits
 
   return (
     //will reveal after the entry animation completes, and then the user can interact with it to select a project.
@@ -44,7 +43,7 @@ export default function SidebarNav({ activeIdx, revealed, onSelectProject }: Sid
       {/* ── Completed Missions ── */}
       <section className="sb-sec">
         <div className="sb-hd">Completed Missions</div>
-        {activeProjects?.map( ( { project, i } ) => (
+        {activeProjects.map( ( { project, i } ) => (
           <button
             key={project.id}
             className={`sb-it${i === activeIdx ? ' act' : ''}`}

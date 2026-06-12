@@ -73,7 +73,7 @@ export default function ContactSection() {
 
           {/* Quote tagline */}
           <p
-            className="font-nasalization text-white/35 tracking-[0.1em] leading-[1.5] text-[0.72rem] sm:text-[0.9rem] md:text-[1.1rem] lg:text-[1.4rem] xl:text-[1.75rem] mt-1"
+            className="font-nasalization text-white/35 text-[0.72rem] sm:text-[0.9rem] md:text-[1.1rem] lg:text-[1.4rem] xl:text-[1.75rem] mt-1"
           >
             &ldquo;May the <span className="text-primary/60">Force </span> be with you.&rdquo;
           </p>

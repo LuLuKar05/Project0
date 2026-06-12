@@ -3,6 +3,9 @@
  * @file components/MiniLabels.tsx
  * Always-visible small planet name labels rendered in the HTML overlay layer.
  *
+ * Receives the projects array as a prop — fetched server-side by the page
+ * (services/getProjects) and passed down, so there is no client fetch here.
+ *
  * Label positions are updated every frame by the Three.js loop via an
  * imperative ref (bypassing React state to avoid 60 fps re-renders).
  *
@@ -16,7 +19,7 @@ import {
   useImperativeHandle,
 } from 'react';
 
-import useProjects from '@/hooks/useProjects';
+import type { Project } from '@/lib/types';
 
 // ─────────────────────────────────────────────
 //  Imperative handle API
@@ -38,6 +41,11 @@ export interface MiniLabelsHandle {
   setLabel: (idx: number, x: number, y: number, opacity: number) => void;
 }
 
+interface MiniLabelsProps {
+  /** Projects fetched server-side, in the same order as the planets array */
+  projects: Project[];
+}
+
 // ─────────────────────────────────────────────
 //  Component
 // ─────────────────────────────────────────────
@@ -46,13 +54,10 @@ export interface MiniLabelsHandle {
  * Renders one `<div>` per planet as an HTML overlay above the canvas.
  * Position is updated imperatively every frame by the Three.js loop.
  */
-const MiniLabels = forwardRef<MiniLabelsHandle>(
-  function MiniLabels(_props, ref) {
-    const { projects, loading } = useProjects();
+const MiniLabels = forwardRef<MiniLabelsHandle, MiniLabelsProps>(
+  function MiniLabels({ projects }, ref) {
     /** One ref per label element, indexed by planet order */
-    const labelRefs = useRef<Array<HTMLDivElement | null>>(
-      new Array(20).fill(null),
-    );
+    const labelRefs = useRef<Array<HTMLDivElement | null>>([]);
 
     // Expose setLabel() to the parent component
     useImperativeHandle(ref, () => ({
@@ -64,7 +69,9 @@ const MiniLabels = forwardRef<MiniLabelsHandle>(
         el.style.opacity = String(opacity);
       },
     }));
-    if (loading || !projects) return null; // don't render until projects are loaded
+
+    if (projects.length === 0) return null;
+
     return (
       <>
         {projects.map((proj, i) => (

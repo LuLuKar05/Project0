@@ -2,6 +2,17 @@
  * @file app/page.tsx
  * @description Root page — the entry point visitors see at "/".
  *
+ * ─── DATA FLOW (server-first) ─────────────────────────────────────────────────
+ *
+ * This is an async Server Component. All DB data is fetched here at render
+ * time via the services layer (Prisma directly — no internal API round-trip)
+ * and passed down to client components as props.
+ *
+ * `revalidate = 3600` makes the page static with ISR: it is generated once,
+ * served from cache, and regenerated at most once per hour. Creating a
+ * project through POST /api/v1/postProjects also calls revalidatePath('/')
+ * so new projects appear immediately without waiting for the ISR window.
+ *
  * ─── PAGE STRUCTURE ───────────────────────────────────────────────────────────
  *
  *   <HeroSection>     Full-viewport intro. Starfield background is provided
@@ -16,19 +27,22 @@
  *   z-0   background Starfield  (StarfieldProvider — layout.tsx)
  *   z-10  hero content
  *   z-10+ galaxy UI (sidebar, detail panel, hover labels…)
- *
- * ─── NOTE ─────────────────────────────────────────────────────────────────────
- *
- * This file is a Server Component by default (no 'use client').
- * HeroSection is a Client Component (it imports useStarfield) — Next.js
- * handles the boundary automatically when it is imported here.
  */
 
 import HeroSection from '@/components/heroSection';
-import SkillsSection from '../components/SkillsSection';
+// import SkillsSection from '@/components/SkillsSection';
 import ContactSection from '@/components/ContactSection';
+// import { getSkills }   from '@/services/getSkills';
+// import { getProjects } from '@/services/getProjects';
 
-export default function HomePage() {
+/** ISR — serve from cache, regenerate at most once per hour. */
+export const revalidate = 3600;
+
+export default async function HomePage() {
+  // Server-side data fetching — uncomment alongside the sections that use it:
+  // const skillCategories = await getSkills();
+  // const projects        = await getProjects();
+
   return (
     <main className="relative">
 
@@ -45,13 +59,14 @@ export default function HomePage() {
          * TODO: Mount the Galaxy component here once it is built.
          * The Three.js renderer will attach its canvas to this section.
          * SidebarNav, HoverLabel, DetailPanel and MiniLabels all live
-         * inside (or alongside) this section.
+         * inside (or alongside) this section — pass them `projects`
+         * fetched above (SidebarNav and MiniLabels now take it as a prop).
          */}
         {/* <p className="text-white/20 font-mono text-sm tracking-widest uppercase">
           Galaxy sector — loading…
         </p>
       </section> */}
-      {/* <SkillsSection /> */}
+      {/* <SkillsSection categories={skillCategories} /> */}
       <ContactSection />
 
     </main>
