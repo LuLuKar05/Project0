@@ -1,20 +1,29 @@
 import { OrbitConfig } from '@/lib/types'
+import {
+    ORBIT_BASE_RADIUS,
+    ORBIT_STEP,
+    GRID_RADIUS,
+} from '@/lib/galaxy/sceneConfig'
 
-/** A single segment of a planet's orbit, defined by its start and end angles (in radians). */
-//Example simple implementation:
-    // radius      — each orbit raidus increase by 7 units, starting from 15 for the first planet(order 1 → 15, 2 → 22, 3 → 29…)
-    // speed       — outer planets orbits slower than the inner ones, mimicking real physics
-    // inclination — spread across -15° → +15° in a repeating cycle of 8 to create visual variety.
+/**
+ * Generate orbit parameters for the project in orbit slot `order`.
+ *
+ * Values are derived from the same constants the R3F scene uses
+ * (lib/galaxy/sceneConfig), so API-created projects always land inside
+ * the rendered galaxy — matching the progression of the seeded data:
+ *   order 0 → r 3.8, order 1 → r 6.05, order 2 → r 8.3 …
+ *
+ * radius      — ORBIT_BASE_RADIUS + order * ORBIT_STEP, capped just inside GRID_RADIUS
+ * speed       — outer planets orbit slower than inner ones (radians/second)
+ * inclination — small tilt (degrees) cycled per slot for visual variety
+ */
 
-    // For a more complex implementation, you could use a combination of mathematical functions and randomization (with a fixed seed for determinism) to generate orbits that are more visually interesting while still ensuring they don't overlap too much.
-
-    /** Note: can adjust the inclination_cycle range for different visual effects(-5 to +5) and (-30 to +30) */
+const INCLINATION_CYCLE = [0.5, 2.3, 4.5, 1.2, 3.8, 5.9]
 
 export function generateOrbit(order: number): Omit<OrbitConfig, 'id' | 'projectId'> {
-    const INCLINATION_CYCLE = [-15, -10, -5, 0, 5, 10, 15, 8]
-	return {
-        radius:         (order * 7) + 8, 
-        speed:          parseFloat((1.2 / (order * 0.3 + 0.6)).toFixed(3)),
-        inclination:    INCLINATION_CYCLE[(order-1) % INCLINATION_CYCLE.length]
-	} as Omit<OrbitConfig, 'id' | 'projectId'>
+    return {
+        radius:      Math.min(ORBIT_BASE_RADIUS + order * ORBIT_STEP, GRID_RADIUS - 1),
+        speed:       parseFloat((0.12 / (1 + 0.6 * order)).toFixed(3)),
+        inclination: INCLINATION_CYCLE[order % INCLINATION_CYCLE.length],
+    }
 }

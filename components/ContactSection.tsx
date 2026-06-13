@@ -10,11 +10,8 @@ export default function ContactSection() {
   const [revealed, setRevealed]       = useState(false);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      const t = setTimeout(() => setRevealed(true), 120);
-      return () => clearTimeout(t);
-    });
-    return () => cancelAnimationFrame(raf);
+    const t = setTimeout(() => setRevealed(true), 120);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {

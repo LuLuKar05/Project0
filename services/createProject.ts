@@ -1,4 +1,5 @@
 import { prisma }                     from '@/lib/prisma'
+import { Prisma }                     from '@/lib/generated/prisma/client'
 import {generateOrbit}                from './generateOrbit'
 import {generatePlanetVisual}         from './generatePlanetVisual'
 import type { Project }               from '@/lib/types'
@@ -84,12 +85,23 @@ export async function createProject(input:ValidatedProjectInput): Promise<Servic
             project,
         }
      }catch (error){
+        // Race-safe backstop: two concurrent requests can both pass the
+        // slug pre-check above; the second one hits the DB unique constraint
+        // here (P2002) and should get a 409, not a 500.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            return {
+                ok: false,
+                status: 409,
+                error: 'CONFLICT',
+                message: 'A project with the same unique value (slug) already exists.',
+            }
+        }
         console.error('[createProject] Error creating project:', error)
         return{
         ok: false,
         status: 500,
         error: 'INTERNAL_ERROR',
-        message: 'createProject service function is not implemented yet'
+        message: 'Failed to create project.'
         }
 
     }

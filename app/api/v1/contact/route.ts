@@ -1,6 +1,6 @@
 import { validateContactInput } from '@/schemas/validateContactInput';
 import { createContactMessage, markEmailSent } from '@/services/createContactMessage';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { sendContactEmail } from '@/services/sendContactEmail';
 
 const idempotencyCache = new Map<string, { status: number, body: object}>();
@@ -46,14 +46,18 @@ export async function POST(req: NextRequest) {
       idempotencyCache.set(requestID, { status: 201, body: { success: true, data: result.contactMessage, message: 'Contact message received.' } });
       setTimeout(() => idempotencyCache.delete(requestID), 60 * 1000); // Cache for 1 minute
     }
-    //Sending email 
-    sendContactEmail(validation.data).then(emailRes => {
-      if(emailRes.ok){
-        markEmailSent(result.contactMessage!.id); // We can be sure contactMessage is there since result.ok is true.
+    // Send the email after the response is flushed. `after()` keeps the
+    // serverless function alive until the work finishes — a bare
+    // fire-and-forget promise could be frozen mid-send once the response
+    // returns, silently dropping the email.
+    after(async () => {
+      const emailRes = await sendContactEmail(validation.data);
+      if (emailRes.ok) {
+        await markEmailSent(result.contactMessage!.id); // contactMessage is set since result.ok is true.
       } else {
         console.error('Failed to send contact email:', emailRes.error);
       }
-    });                       
+    });
 
     return NextResponse.json({ success: true, data: result.contactMessage, message: 'Contact message received.' }, { status: 201 });
   } catch(error) {

@@ -1,358 +1,150 @@
-/**
- * @file components/hero/Planet3D.tsx
- * @description Three.js 3-D planet/model with two distinct render modes.
- *
- * ── FOREGROUND MODE (default) ─────────────────────────────────────────────────
- *   Canvas placed inside normal layout flow.
- *   • Auto-rotation, hover speed boost.
- *
- * ── BACKGROUND MODE  (backgroundMode prop) ────────────────────────────────────
- *   Designed to live inside a layout column at the same visual layer as the
- *   Starfield.  The object is completely inert — no hover, no click, no pointer
- *   events at all.
- *
- *   The "camera angle trick":
- *   window.mousemove translates the CSS wrapper div so the planet feels like
- *   part of the same 3-D world as the Starfield's tilt.
- *
- * ── GLB MODEL ─────────────────────────────────────────────────────────────────
- *   Pass modelUrl="/models/foo.glb" to replace the procedural sphere with a GLB.
- *   • File must live inside /public/ (served at root URL by Next.js).
- *   • Draco decoder files expected at /draco/.
- *   • Model is auto-scaled to fit a bounding sphere of radius R = 1.0.
- *   • Its own PBR materials are preserved.
- *   • On load failure the procedural sphere stays visible as a fallback.
- *
- * ── SIZE UPDATES ──────────────────────────────────────────────────────────────
- *   The `size` prop changing (e.g. window resize) only calls renderer.setSize()
- *   — the scene, materials, and animation loop are NOT rebuilt.  A full rebuild
- *   only happens when rotationSpeed / backgroundMode / modelUrl / axialTilt
- *   actually change.
- */
-
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+/**
+ * @file components/hero/Planet3D.tsx
+ * @description Hero 3-D model (the Death Star) on a transparent
+ * react-three-fiber canvas. Intentionally minimal: the model slowly
+ * rotates — no parallax, no hover effects, no pointer interaction.
+ *
+ * useGLTF loads the Draco-compressed GLB (decoder files in /draco/) and
+ * R3F disposes of all GPU resources automatically on unmount.
+ */
 
-// ─── types ────────────────────────────────────────────────────────────────────
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 export interface Planet3DProps {
-  /** Canvas (width/height) in pixels. */
-  size?:           number;
-  /** Radians per frame — overrides the preset default. */
-  rotationSpeed?:  number;
-  /**
-   * Background mode — completely non-interactive.
-   * CSS wrapper div translates with window.mousemove for parallax.
-   */
-  backgroundMode?: boolean;
-  /** Radians to tilt the planet's rotation axis (default 0.27 ≈ 15°). */
-  axialTilt?:      number;
-  /** Path to a glb/glTF model inside /public. Falls back to procedural sphere. */
-  modelUrl?:       string;
-  /** Disable hover effects even in foreground mode. */
-  noInteraction?:  boolean;
-  className?:      string;
-  style?:          React.CSSProperties;
+  /** Canvas width/height in pixels. */
+  size?: number;
+  /** Radians per frame at 60 fps. */
+  rotationSpeed?: number;
+  /** Path to a glb/glTF model inside /public. */
+  modelUrl: string;
+  /** Radians to tilt the model's rotation axis. */
+  axialTilt?: number;
+  className?: string;
 }
 
-// ─── preset config ────────────────────────────────────────────────────────────
+// ─── model ────────────────────────────────────────────────────────────────────
 
-interface PlanetPreset {
-  color:             number;
-  emissive:          number;
-  roughness:         number;
-  metalness:         number;
-  rotationSpeed:     number;
-}
+function Model({
+  url,
+  axialTilt,
+  rotationSpeed,
+}: {
+  url: string;
+  axialTilt: number;
+  rotationSpeed: number;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(url, '/draco/');
 
-const PRESET: PlanetPreset = {
-  color:         0xb2b2a8,
-  emissive:      0x050505,
-  roughness:     0.92,
-  metalness:     0.05,
-  rotationSpeed: 0.0018,
-};
+  // Normalise: fit a 2-unit bounding box, centred at the origin.
+  //
+  // IMPORTANT: never mutate `scene` — drei caches it per URL and shares it
+  // across mounts. Mutating it breaks the bounding-box maths the second
+  // time this runs (Strict Mode / remount): the model gets re-measured
+  // already-scaled and snaps back to its raw size. Instead, measure
+  // read-only and apply scale + offset on a wrapper group (idempotent).
+  const { scale, offset } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const sz = box.getSize(new THREE.Vector3());
+    const s = 2 / Math.max(sz.x, sz.y, sz.z);
+    return { scale: s, offset: center.multiplyScalar(-s) };
+  }, [scene]);
 
-// ─── scene builder ────────────────────────────────────────────────────────────
-
-interface SceneRefs {
-  scene:    THREE.Scene;
-  camera:   THREE.PerspectiveCamera;
-  pivot:    THREE.Group;
-  sphere:   THREE.Mesh;
-  material: THREE.MeshStandardMaterial;
-}
-
-function buildScene(
-  preset:        PlanetPreset,
-  R:             number,
-  axialTilt:     number,
-): SceneRefs {
-  const scene = new THREE.Scene();
-
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-  camera.position.set(0, 0, R * 3.2);
-
-  // Ambient fill — raised from 0.18 so the Death Star's surface detail is
-  // visible in the shadowed hemisphere instead of going pitch-black.
-  const ambient = new THREE.AmbientLight(0xffffff, 0.42);
-  scene.add(ambient);
-
-  // Main key light — slightly reduced to balance the increased ambient.
-  const sun = new THREE.DirectionalLight(0xfff8f0, 1.35);
-  sun.position.set(-R * 2, R * 1.5, R * 2.5);
-  scene.add(sun);
-
-  // Cool rim light for a deep-space feel.
-  const rim = new THREE.DirectionalLight(0x8090ff, 0.35);
-  rim.position.set(R * 2, -R * 0.5, -R * 1.5);
-  scene.add(rim);
-
-  const sphereGeo = new THREE.SphereGeometry(R, 96, 64);
-  const material  = new THREE.MeshStandardMaterial({
-    color:     preset.color,
-    emissive:  preset.emissive,
-    roughness: preset.roughness,
-    metalness: preset.metalness,
+  useFrame((_, dt) => {
+    // rotationSpeed is radians/frame at 60 fps — scale by dt for any refresh rate.
+    if (groupRef.current) groupRef.current.rotation.y += rotationSpeed * dt * 60;
   });
-  const sphere = new THREE.Mesh(sphereGeo, material);
-  sphere.rotation.z = axialTilt;
 
-  const pivot = new THREE.Group();
-  pivot.add(sphere);
-  scene.add(pivot);
-
-  return { scene, camera, pivot, sphere, material };
+  return (
+    <group ref={groupRef} rotation-z={axialTilt}>
+      <group scale={scale} position={offset}>
+        <primitive object={scene} />
+      </group>
+    </group>
+  );
 }
+
+useGLTF.preload('/models/death_star.glb', '/draco/');
 
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function Planet3D({
-  size           = 100,
-  rotationSpeed,
-  backgroundMode = true,
+  size = 100,
+  rotationSpeed = 0.0003,
   modelUrl,
-  axialTilt      = 0.27,
-  noInteraction  = false,
-  className      = '',
-  style          = {},
+  axialTilt = 0.27,
+  className = '',
 }: Planet3DProps) {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const hovered    = useRef(false);
 
-  const parallaxTarget  = useRef({ x: 0, y: 0 });
-  const parallaxCurrent = useRef({ x: 0, y: 0 });
-
-  // Renderer is kept in a ref so the size-update effect can reach it without
-  // triggering a full scene rebuild.
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-
-  // ── Size-only update ────────────────────────────────────────────────────────
-  // Runs whenever `size` changes after initial mount.
-  // Does NOT rebuild the scene — just resizes the WebGL viewport.
+  // Cursor-follow parallax: pointermove sets a target offset, and a rAF loop
+  // lerps the wrapper transform toward it each frame (factor 0.04) — smooth
+  // trailing drift, same approach as the original vanilla version. The CSS
+  // transform never touches the Three.js scene, so it costs nothing on the GPU.
   useEffect(() => {
-    rendererRef.current?.setSize(size, size);
-  }, [size]);
+    const el = wrapperRef.current;
+    if (!el) return;
 
-  // ── Full scene rebuild ──────────────────────────────────────────────────────
-  // Only re-runs when scene-affecting props change (NOT `size`).
-  useEffect(() => {
-    if (!mounted) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const speed = rotationSpeed ?? (backgroundMode ? 0.0003 : PRESET.rotationSpeed);
-    const R = 1.0;
-
-    // ── Renderer ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias:       true,
-      alpha:           true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(size, size);
-    renderer.setClearColor(0x000000, 0);
-    renderer.toneMapping         = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    rendererRef.current = renderer;
-
-    // ── Scene ──────────────────────────────────────────────────────────────────
-    const { scene, camera, pivot, sphere, material } = buildScene(PRESET, R, axialTilt);
-
-    // ── GLB loader (optional) ──────────────────────────────────────────────────
-    let glbModel: THREE.Group | null = null;
-    if (modelUrl) {
-      const draco = new DRACOLoader();
-      draco.setDecoderPath('/draco/');
-      const loader = new GLTFLoader();
-      loader.setDRACOLoader(draco);
-      loader.load(
-        modelUrl,
-        (gltf) => {
-          glbModel = gltf.scene;
-          const box    = new THREE.Box3().setFromObject(glbModel);
-          const center = new THREE.Vector3();
-          const sz     = new THREE.Vector3();
-          box.getCenter(center);
-          box.getSize(sz);
-          const scale = (R * 2) / Math.max(sz.x, sz.y, sz.z);
-          glbModel.scale.setScalar(scale);
-          // Translate so the geometric center sits at the scene origin.
-          glbModel.position.set(
-            -center.x * scale,
-            -center.y * scale,
-            -center.z * scale,
-          );
-          glbModel.rotation.z = axialTilt;
-          pivot.remove(sphere);
-          sphere.geometry.dispose();
-          (sphere.material as THREE.Material).dispose();
-          pivot.add(glbModel);
-        },
-        undefined,
-        (err) => console.warn('[Planet3D] GLB load failed — using procedural sphere:', err),
-      );
-    }
-
-    // ── Parallax (background mode only) ───────────────────────────────────────
     const PAR_X = size * 0.17;
     const PAR_Y = size * 0.15;
+    const target  = { x: 0, y: 0 };
+    const current = { x: 0, y: 0 };
 
-    function applyParallax(clientX: number, clientY: number) {
-      if (!backgroundMode) return;
-      const mx = (clientX / window.innerWidth  - 0.5) * 2;
-      const my = (clientY / window.innerHeight - 0.5) * 2;
-      parallaxTarget.current.x = mx * PAR_X;
-      parallaxTarget.current.y = my * PAR_Y;
-    }
-
-    function onMouseMove(e: MouseEvent) { applyParallax(e.clientX, e.clientY); }
-    function onTouchMove(e: TouchEvent) {
-      const t = e.touches[0];
-      if (t) applyParallax(t.clientX, t.clientY);
-    }
-
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-
-    // ── Animation loop ─────────────────────────────────────────────────────────
-    let rafId: number;
-
-    function animate() {
-      rafId = requestAnimationFrame(animate);
-
-      const activeSpeed =
-        !backgroundMode && !noInteraction && hovered.current ? speed * 2.8 : speed;
-
-      if (glbModel) {
-        glbModel.rotation.y += activeSpeed;
-      } else {
-        sphere.rotation.y += activeSpeed;
-      }
-
-      renderer.render(scene, camera);
-
-      if (backgroundMode && wrapperRef.current) {
-        const lerpF = 0.04;
-        parallaxCurrent.current.x +=
-          (parallaxTarget.current.x - parallaxCurrent.current.x) * lerpF;
-        parallaxCurrent.current.y +=
-          (parallaxTarget.current.y - parallaxCurrent.current.y) * lerpF;
-        wrapperRef.current.style.transform =
-          `translateX(${parallaxCurrent.current.x.toFixed(2)}px)` +
-          ` translateY(${parallaxCurrent.current.y.toFixed(2)}px)`;
-      }
-    }
-
-    animate();
-
-    // ── Hover (foreground + interaction enabled only) ──────────────────────────
-    const onEnter = () => { hovered.current = true;  };
-    const onLeave = () => { hovered.current = false; };
-    const interactionActive = !backgroundMode && !noInteraction;
-    if (interactionActive) {
-      canvas.addEventListener('mouseenter', onEnter);
-      canvas.addEventListener('mouseleave', onLeave);
-    }
-
-    // ── Cleanup ────────────────────────────────────────────────────────────────
-    return () => {
-      cancelAnimationFrame(rafId);
-      rendererRef.current = null;
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('touchmove', onTouchMove);
-      if (interactionActive) {
-        canvas.removeEventListener('mouseenter', onEnter);
-        canvas.removeEventListener('mouseleave', onLeave);
-      }
-      scene.traverse((obj) => {
-        if (obj instanceof THREE.Mesh || obj instanceof THREE.Line) {
-          obj.geometry.dispose();
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else (obj.material as THREE.Material).dispose();
-        }
-        if (obj instanceof THREE.Points) {
-          obj.geometry.dispose();
-          (obj.material as THREE.Material).dispose();
-        }
-      });
-      renderer.dispose();
-      void material; // suppress unused-variable warning — disposed via scene.traverse
+    const onMove = (e: PointerEvent) => {
+      target.x = (e.clientX / window.innerWidth  - 0.5) * 2 * PAR_X;
+      target.y = (e.clientY / window.innerHeight - 0.5) * 2 * PAR_Y;
     };
-    // `size` intentionally omitted — renderer.setSize is handled by the effect above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, rotationSpeed, backgroundMode, modelUrl, axialTilt]);
 
-  // ── SSR placeholder ────────────────────────────────────────────────────────
-  if (!mounted) {
-    return (
-      <div
-        className={className}
-        style={{ width: size, height: size, flexShrink: 0, ...style }}
-      />
-    );
-  }
+    let raf: number;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      current.x += (target.x - current.x) * 0.04;
+      current.y += (target.y - current.y) * 0.04;
+      el.style.transform = `translate(${current.x.toFixed(2)}px, ${current.y.toFixed(2)}px)`;
+    };
 
-  const canvasEl = (
-    <canvas
-      ref={canvasRef}
-      width={size}
-      height={size}
+    window.addEventListener('pointermove', onMove, { passive: true });
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', onMove);
+    };
+  }, [size]);
+
+  return (
+    <div
+      ref={wrapperRef}
       className={className}
-      style={{
-        display:       'block',
-        flexShrink:    0,
-        pointerEvents: (backgroundMode || noInteraction) ? 'none' : 'auto',
-        ...style,
-      }}
-    />
-  );
-
-  if (backgroundMode) {
-    return (
-      <div
-        ref={wrapperRef}
-        style={{
-          display:       'inline-block',
-          flexShrink:    0,
-          pointerEvents: 'none',
-          willChange:    'transform',
+      aria-hidden="true"
+      style={{ width: size, height: size, flexShrink: 0, pointerEvents: 'none', willChange: 'transform' }}
+    >
+      <Canvas
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 3.2] }}
+        onCreated={({ gl, scene }) => {
+          // The ONLY light source: a neutral procedural environment map
+          // (three's built-in RoomEnvironment — no network fetch). This is
+          // how GLB viewers (including VS Code's preview) light models:
+          // even, directionless image-based lighting. No key light, no rim
+          // glow, no hard shadow across the sphere.
+          const pmrem = new THREE.PMREMGenerator(gl);
+          scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+          pmrem.dispose();
         }}
       >
-        {canvasEl}
-      </div>
-    );
-  }
-
-  return canvasEl;
+        <Suspense fallback={null}>
+          <Model url={modelUrl} axialTilt={axialTilt} rotationSpeed={rotationSpeed} />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
 }

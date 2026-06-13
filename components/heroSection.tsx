@@ -122,14 +122,12 @@ export default function HeroSection() {
           className="w-full md:w-1/4 flex items-center justify-center pb-20 md:pb-0"
           aria-hidden="true"
         >
-          <Planet3D
+          {/* <Planet3D
             size={planetSize}
             rotationSpeed={0.001}
             modelUrl="/models/death_star.glb"
             axialTilt={0.80}
-            backgroundMode
-            noInteraction
-          />
+          /> */}
         </div>
 
       </div>

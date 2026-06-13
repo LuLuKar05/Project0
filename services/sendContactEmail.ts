@@ -1,6 +1,19 @@
 import { Resend } from 'resend';
 import {ValidatedContactInput} from '@/schemas/validateContactInput';
 
+/**
+ * Escape user-supplied text before interpolating into the HTML email body —
+ * otherwise a sender could inject arbitrary markup/links into the email.
+ */
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export async function sendContactEmail(input: ValidatedContactInput): Promise<{ ok: boolean, error?: string }> {
     const from = process.env.RESEND_FROM_EMAIL;
     const to = process.env.CONTACT_EMAIL;
@@ -21,12 +34,12 @@ export async function sendContactEmail(input: ValidatedContactInput): Promise<{ 
                     \nType: ${input.type}
                     \n\nMessage:${input.message}`,
             html: `<h1>New Contact Message</h1>
-                   <p><strong>Name:</strong> ${input.name}</p>
-                   <p><strong>Email:</strong> ${input.email}</p>
-                     <p><strong>Organization:</strong> ${input.org}</p>
-                     <p><strong>Type:</strong> ${input.type}</p>
+                   <p><strong>Name:</strong> ${escapeHtml(input.name)}</p>
+                   <p><strong>Email:</strong> ${escapeHtml(input.email)}</p>
+                     <p><strong>Organization:</strong> ${escapeHtml(input.org)}</p>
+                     <p><strong>Type:</strong> ${escapeHtml(input.type)}</p>
                      <p><strong>Message:</strong></p>
-                        <p>${input.message.replace(/\n/g, '<br>')}</p>`
+                        <p>${escapeHtml(input.message).replace(/\n/g, '<br>')}</p>`
         })
         if(error){
             console.error('Failed to send contact email:', error);

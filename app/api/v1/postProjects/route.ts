@@ -43,8 +43,7 @@ export async function POST(req: Request) {
   }
 
   // ── 2. Parse body ────────────────────────────────────────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let body: any
+  let body: Record<string, unknown>
   try {
     body = await req.json()
   } catch {

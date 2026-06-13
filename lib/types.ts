@@ -1,8 +1,7 @@
 /**
  * @file lib/types.ts
- * @description Single source of truth for all TypeScript types in the Galaxy
- * Sector app.  Imported by both the Three.js galaxy modules and React UI
- * components.
+ * @description Single source of truth for the app's TypeScript types.
+ * Re-exports the generated Prisma model types under friendly names.
  *
  * ─── IMPORT STRATEGY ─────────────────────────────────────────────────────────
  *
@@ -13,31 +12,30 @@
  *
  * ─── PROJECT TYPE ─────────────────────────────────────────────────────────────
  *
- * `Project` is defined using ProjectGetPayload with orbit and visual included.
- * This means:
- *   • Every API route that returns projects MUST use:
- *       prisma.project.findMany({ include: { orbit: true, visual: true } })
- *   • Components can safely access project.orbit and project.visual without
- *     undefined checks (TypeScript will enforce the include at the query level).
+ * `Project` is defined using ProjectGetPayload with orbit, visual and tags
+ * included. This means:
+ *   • Every query that returns projects MUST use:
+ *       prisma.project.findMany({ include: { orbit: true, visual: true, tags: true } })
+ *   • Components can rely on project.orbit / project.visual / project.tags
+ *     being present (orbit and visual stay nullable — guard before 3-D use).
  */
 
-import type * as THREE from 'three';
 import type { ProjectGetPayload } from './generated/prisma/models/Project';
 import type { OrbitConfigModel }  from './generated/prisma/models/OrbitConfig';
 import type { PlanetVisualModel } from './generated/prisma/models/PlanetVisual';
-import type { ContactMessageModel } from './generated/prisma/models/ContactMessage';  
+import type { ContactMessageModel } from './generated/prisma/models/ContactMessage';
 import type { TagModel  } from './generated/prisma/models/Tag';
 import type { SkillCategoryModel } from './generated/prisma/models/SkillCategory';
 import type { SkillModel } from './generated/prisma/models/Skill';
 
-//  Database model types  
+//  Database model types
 
 /**
- * A single portfolio project entry, always fetched with its orbit and visual
- * relations included.
+ * A single portfolio project entry, always fetched with its orbit, visual
+ * and tags relations included.
  *
  * Use this type everywhere a project object is passed around.
- * The API route must match: prisma.project.findMany({ include: { orbit: true, visual: true } })
+ * The query must match: prisma.project.findMany({ include: { orbit: true, visual: true, tags: true } })
  *
  * orbit and visual are typed as nullable (| null) because the schema keeps
  * them optional on the Project side — Prisma's database constraint rule.
@@ -47,7 +45,7 @@ export type Project = ProjectGetPayload<{
   include: {
     orbit:  true;
     visual: true;
-    tags:    true; 
+    tags:   true;
   };
 }>;
 
@@ -63,125 +61,6 @@ export type Tag = TagModel;
 export type SkillCategory = SkillCategoryModel;
 export type Skill = SkillModel;
 
-// ─────────────────────────────────────────────
-//  Runtime Three.js types  (not serialisable)
-// ─────────────────────────────────────────────
-
-/**
- * A fully-constructed planet at runtime.
- * Created by orbitsPlanets.create() and stored in appState.planets[].
- *
- * By the time a PlanetObject is created, orbit and visual have been verified
- * to be non-null (active projects always have both), so they are typed as
- * non-nullable here.
- */
-export interface PlanetObject {
-  mesh:    THREE.Mesh;   //3-D sphere mesh rendered in the scene
-  proj:    Project;      //Project data from db with orbit and visual included (guaranteed non-null for active planets)
-  orbit:   OrbitConfig;  //Orbital parameters (radius, speed, inclination)
-  vis:     PlanetVisual; //Visual parameters (color, texture, etc.)
-  glow:    THREE.Sprite | null;
-  angle:   number;
-  ring:    THREE.Line;   // Orbital ring rendered in the scene
-  labelEl: HTMLElement | null;    //Used for hover labels.
-}
-
-/**
- * Camera animation tween — interpolates position & lookAt over `dur` seconds.
- * Set to null when no camera transition is in progress.
- */
-export interface CamAnim {
-  /** Camera start world position */
-  fromP: THREE.Vector3;
-  /** Camera start lookAt target */
-  fromT: THREE.Vector3;
-  /** Camera destination world position */
-  toP:   THREE.Vector3;
-  /** Camera destination lookAt target */
-  toT:   THREE.Vector3;
-  /** Current normalised progress, 0 → 1 */
-  prog:  number;
-  /** Total transition duration in seconds */
-  dur:   number;
-}
-
-/**
- * Mutable per-frame application state, shared across all galaxy modules.
- * Only primitive values here — Three.js objects live in gfx.ts.
- */
-export interface AppState {
-  /** Index of the currently hovered planet (-1 = none) */
-  hovIdx:        number;
-  /** Index of the currently selected / zoomed-in planet (-1 = overview) */
-  selIdx:        number;
-  /** True while a camera transition is playing */
-  transitioning: boolean;
-  /** Total seconds elapsed since the scene started */
-  elapsed:       number;
-  /** Set to true once the entry animation sequence finishes */
-  entryDone:     boolean;
-}
-
-/**
- * Callbacks provided by the React layer to the Three.js galaxy layer.
- * Called on significant state changes so React can update UI accordingly.
- */
-export interface GalaxyCallbacks {
-  /** A planet gained or lost hover focus (idx = -1 when unhovered) */
-  onHoverChange:  (idx: number) => void;
-  /** A planet was clicked / selected by the user */
-  onPlanetSelect: (idx: number, proj: Project) => void;
-  /** Camera returned to the sector overview */
-  onReturnHome:   () => void;
-}
-
-/**
- * Public API returned by initGalaxy() to React consumers.
- * Lets the React layer trigger camera moves without direct Three.js access.
- */
-export interface GalaxyAPI {
-  /** Fly the camera to the planet at the given index */
-  flyTo:    (idx: number) => void;
-  /** Return the camera to the overview position */
-  flyHome:  () => void;
-  /** Navigate to the previous active project (wrap-around) */
-  navPrev:  () => void;
-  /** Navigate to the next active project (wrap-around) */
-  navNext:  () => void;
-  /** Stop the animation loop and clean up all Three.js resources */
-  destroy:  () => void;
-}
-
-// ─────────────────────────────────────────────
-//  Web Audio types
-// ─────────────────────────────────────────────
-
-/**
- * Nodes that make up the continuous ambient drone.
- * Stored so the oscillator can be stopped on cleanup.
- */
-export interface AmbientNodes {
-  osc:  OscillatorNode;
-  gain: GainNode;
-}
-
-// ─────────────────────────────────────────────
-//  Trail types
-// ─────────────────────────────────────────────
-
-/** A single historical position snapshot stored in a trail buffer. */
-export interface TrailPoint {
-  x: number;
-  y: number;
-  z: number;
-}
-
-/** Runtime trail data for one active planet. */
-export interface TrailEntry {
-  /** Index into appState.planets[] */
-  planetIdx: number;
-  /** Ring-buffer of recent world-space positions */
-  history:   TrailPoint[];
-  /** The Three.js Line that renders the trail */
-  line:      THREE.Line;
-}
+// The former hand-rolled Three.js runtime types (PlanetObject, CamAnim,
+// AppState, GalaxyCallbacks, etc.) were removed when the galaxy moved to
+// react-three-fiber — R3F components own their runtime state directly.

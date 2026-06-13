@@ -93,7 +93,7 @@ async function main() {
       active:      true,
       order:       0,
       orbit:  { create: { radius: 3.8,  speed: 0.120, inclination: 0.5 } },
-      visual: { create: { textureUrl: '/textures/planet-blue.jpg',   sz: 0.32, rotationSpeed: 0.30, glowIntensity: 0.6 } },
+      visual: { create: { textureUrl: 'procedural',   sz: 0.32, rotationSpeed: 0.30, glowIntensity: 0.6 } },
     },
   })
 
@@ -111,7 +111,7 @@ async function main() {
       active:      true,
       order:       1,
       orbit:  { create: { radius: 6.0,  speed: 0.080, inclination: 2.3 } },
-      visual: { create: { textureUrl: '/textures/planet-orange.jpg', sz: 0.36, rotationSpeed: 0.25, glowIntensity: 0.7 } },
+      visual: { create: { textureUrl: 'procedural', sz: 0.36, rotationSpeed: 0.25, glowIntensity: 0.7 } },
     },
   })
 
@@ -129,7 +129,7 @@ async function main() {
       active:      true,
       order:       2,
       orbit:  { create: { radius: 8.2,  speed: 0.055, inclination: 4.5 } },
-      visual: { create: { textureUrl: '/textures/planet-gold.jpg',   sz: 0.38, rotationSpeed: 0.20, glowIntensity: 0.5 } },
+      visual: { create: { textureUrl: 'procedural',   sz: 0.38, rotationSpeed: 0.20, glowIntensity: 0.5 } },
     },
   })
 
@@ -147,7 +147,7 @@ async function main() {
       active:      true,
       order:       3,
       orbit:  { create: { radius: 10.5, speed: 0.038, inclination: 1.2 } },
-      visual: { create: { textureUrl: '/textures/planet-grey.jpg',   sz: 0.28, rotationSpeed: 0.35, glowIntensity: 0.4 } },
+      visual: { create: { textureUrl: 'procedural',   sz: 0.28, rotationSpeed: 0.35, glowIntensity: 0.4 } },
     },
   })
 
@@ -162,7 +162,7 @@ async function main() {
       active:      false,
       order:       4,
       orbit:  { create: { radius: 13.5, speed: 0.022, inclination: 3.8 } },
-      visual: { create: { textureUrl: '/textures/planet-dark.jpg',   sz: 0.24, rotationSpeed: 0.10, glowIntensity: 0.1 } },
+      visual: { create: { textureUrl: 'procedural',   sz: 0.24, rotationSpeed: 0.10, glowIntensity: 0.1 } },
     },
   })
 
@@ -177,7 +177,7 @@ async function main() {
       active:      false,
       order:       5,
       orbit:  { create: { radius: 16.0, speed: 0.016, inclination: 5.9 } },
-      visual: { create: { textureUrl: '/textures/planet-dark.jpg',   sz: 0.22, rotationSpeed: 0.10, glowIntensity: 0.1 } },
+      visual: { create: { textureUrl: 'procedural',   sz: 0.22, rotationSpeed: 0.10, glowIntensity: 0.1 } },
     },
   })
 

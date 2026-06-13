@@ -263,17 +263,15 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(0x000000, 0); // clear to fully transparent black
 
-      // Style the canvas — position: fixed keeps it covering the full viewport
-      // even when the page is scrolled.  pointer-events: none lets all clicks
-      // pass through to the page content underneath.
+      // Style the canvas — it simply fills the wrapper div, which is
+      // position:fixed and carries the zIndex (set reactively via JSX, so
+      // zIndex prop changes apply without rebuilding the scene).
       Object.assign(renderer.domElement.style, {
-        position:      'fixed',
-        top:           '0',
-        left:          '0',
+        position:      'absolute',
+        inset:         '0',
         width:         '100%',
         height:        '100%',
         pointerEvents: 'none',
-        zIndex:        String(zIndex),
       });
       mount.appendChild(renderer.domElement);
 
@@ -454,12 +452,20 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
       let lastTime              = performance.now();
       let raf: number;
 
+      /**
+       * True when the next frame must be rendered even if nothing is moving —
+       * set on mount, on resize, and for one final frame after activity stops
+       * (so streaks/meteors don't freeze mid-air on screen).
+       */
+      let framePending = true;
+
       // ── event listeners ────────────────────────────────────────────────────
       const onScroll = () => { scrollY = window.scrollY; };
 
       const resize = () => {
         renderer.setSize(window.innerWidth, window.innerHeight);
         camera = makeCamera();
+        framePending = true; // re-render once at the new size even when idle
       };
 
       window.addEventListener('scroll', onScroll, { passive: true });
@@ -504,6 +510,20 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
         // to avoid a barely-visible jitter at very low warp.
         const inWarp = warpFactor > 0.12;
         warpLines.visible = inWarp;
+
+        // ── idle skip ─────────────────────────────────────────────────────────
+        // Stars are frozen when there is no warp speed (BASE_SPEED = 0), so if
+        // no meteor is alive either, skip the per-star loop, buffer uploads,
+        // and GPU render entirely — the rAF tick alone is nearly free. The
+        // meteor spawn timer still runs so the field wakes itself up.
+        nextMeteorIn -= dt;
+        if (nextMeteorIn <= 0 && !meteor) {
+          meteor       = spawnMeteor(W, H);
+          nextMeteorIn = Math.random() * 6000 + 4000; // 4–10 s until next meteor
+        }
+        const sceneActive = speed > 0.00005 || inWarp || meteor !== null;
+        if (!sceneActive && !framePending) return;
+        framePending = sceneActive;
 
         // ── per-star update ───────────────────────────────────────────────────
         let spkVtx = 0; // write cursor into the spike-line buffer
@@ -658,13 +678,7 @@ const Starfield = forwardRef<StarfieldHandle, StarfieldProps>(
         (warpGeo.getAttribute('position')  as THREE.BufferAttribute).needsUpdate = true;
         (warpGeo.getAttribute('lineAlpha') as THREE.BufferAttribute).needsUpdate = true;
 
-        // ── meteor update ──────────────────────────────────────────────────────
-        nextMeteorIn -= dt;
-        if (nextMeteorIn <= 0 && !meteor) {
-          meteor       = spawnMeteor(W, H);
-          nextMeteorIn = Math.random() * 6000 + 4000; // 4–10 s until next meteor
-        }
-
+        // ── meteor update (spawn timer runs earlier, in the idle-skip block) ──
         if (meteor) {
           // progress: 0 = just spawned · 1 = about to expire
           const progress = 1 - meteor.life / meteor.maxLife;

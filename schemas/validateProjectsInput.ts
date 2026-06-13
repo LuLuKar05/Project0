@@ -29,7 +29,7 @@ const isValidUrl = (v: unknown): boolean => {
  *      - also need to update the returned tag data
  */
 
-export function validateProjectInput(body: any): validatedResult {
+export function validateProjectInput(body: Record<string, unknown>): validatedResult {
     //Required string fields validation
     const requiredFields: Array<keyof ValidatedProjectInput> = ['title', 'category', 'date','shortDesc', 'fullDesc',]
     for(const field of requiredFields){
@@ -42,7 +42,7 @@ export function validateProjectInput(body: any): validatedResult {
             }
         }
     }
-    const parsedDate = Date.parse(body.date)
+    const parsedDate = Date.parse(body.date as string) // validated as non-empty string above
     if(isNaN(parsedDate)){
         return {
             ok: false,
@@ -96,18 +96,19 @@ export function validateProjectInput(body: any): validatedResult {
         }
     }
 
+    // All fields below were validated above, so the casts are safe.
     return{
         ok: true,
         data: {
-            title: body.title.trim(),
-            category: body.category?.trim() || 'Uncategorized',
+            title: (body.title as string).trim(),
+            category: (body.category as string).trim(),
             date: new Date(parsedDate),
-            shortDesc: body.shortDesc.trim(),
-            fullDesc: body.fullDesc.trim(),
-            order: body.order,
-            githubURL: body.githubURL?.trim() || null,
-            deployedURL: body.deployedURL?.trim() || null,
-            tagIds: Array.isArray(body.tagIds) ? body.tagIds.map(Number).filter((n: number) => Number.isFinite(n) && n > 0) : [],
+            shortDesc: (body.shortDesc as string).trim(),
+            fullDesc: (body.fullDesc as string).trim(),
+            order: body.order as number | undefined ?? 0,
+            githubURL: (body.githubURL as string | undefined)?.trim() ?? null,
+            deployedURL: (body.deployedURL as string | undefined)?.trim() ?? null,
+            tagIds: Array.isArray(body.tagIds) ? (body.tagIds as number[]) : [],
         }
     }
 

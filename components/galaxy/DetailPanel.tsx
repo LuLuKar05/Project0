@@ -6,14 +6,13 @@
  * out when it is null.  The transition is driven by a CSS class toggle
  * (`visible`) rather than inline styles, keeping animation logic in CSS.
  */
-/** 
+/**
  * Project's Detail Session, exist on the right side of the screen, and will slide in when the project is selected.
- * Will get the properties (Selected Project Details) and Handler functions from the parent component, which controls the selected state and camera controls.
- * 
- * The project object structure is defined in the useProjects hook and it does the same as the database schema.
- * 
+ * Will get the properties (Selected Project Details) and Handler functions from the parent component (Galaxy),
+ * which controls the selected state and camera.
+ *
  *  Props:
- *  project  - The selected Project, or null when no planet is selected
+ *  project  - The selected Project (lib/types Project, includes tags), or null when no planet is selected
  *  onClose  - callback to fly the camera back to overview.
  *  onPrev, onNext  - Navigate to the previous and next projects.
  */
