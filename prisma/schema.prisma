@@ -1,7 +1,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 generator client {
   provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  output   = "../src/lib/generated/prisma"
 }
 datasource db {
   provider = "postgresql"
@@ -69,6 +69,8 @@ model PlanetVisual {
 
 model ContactMessage {
   id            String   @id @default(uuid())
+  requestId     String?  @unique  //idempotency key from the client to prevent duplicate messages
+  ipHash        String?           //hash of the sender's IP address for rate limiting
   name          String
   org           String
   type          String
@@ -76,6 +78,7 @@ model ContactMessage {
   message       String
   emailSent     Boolean  @default(false)
   createdAt     DateTime @default(now())
+  @@index([createdAt, ipHash])  //index for rate limiting and querying messages by date
 }
 
 model Tag{
