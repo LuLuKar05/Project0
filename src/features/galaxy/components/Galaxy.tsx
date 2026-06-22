@@ -90,7 +90,7 @@ export default function Galaxy({ projects }: GalaxyProps) {
     <section
       ref={sectionRef}
       id="galaxy-section"
-      className="relative h-screen w-full overflow-hidden"
+      className="relative h-dvh w-full overflow-hidden"
       aria-label="Project galaxy"
     >
       {/* ── 3D scene ── */}

@@ -69,7 +69,7 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full min-h-screen overflow-hidden flex flex-col"
+      className="relative w-full h-dvh overflow-hidden flex flex-col"
       aria-label="Hero — introduction"
     >
 
@@ -77,7 +77,7 @@ export default function HeroSection() {
        *  flex-col on mobile  → text above, planet below
        *  md:flex-row          → text left (3/4), planet right (1/4)
        ──────────────────────────────────────────────────────────────────────── */}
-      <div className="relative z-10 w-full min-h-screen flex flex-col md:flex-row">
+      <div className="relative z-10 w-full h-full flex flex-col md:flex-row">
 
         {/* ── Text ─────────────────────────────────────────────────────────── */}
         <div className="

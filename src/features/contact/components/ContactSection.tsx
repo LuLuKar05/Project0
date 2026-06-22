@@ -30,12 +30,12 @@ export default function ContactSection() {
 
   return (
     <section
-      className="relative w-full min-h-screen overflow-hidden flex flex-col"
+      className="relative w-full h-dvh overflow-y-auto flex flex-col"
       aria-label="Contact — get in touch"
     >
 
       {/* ── Main layout — mirrors HeroSection two-column grid ── */}
-      <div className="relative z-10 w-full min-h-screen flex flex-col md:flex-row">
+      <div className="relative z-10 w-full min-h-full flex flex-col md:flex-row">
 
         {/* ── Left: headline + actions (3/4) ── */}
         <div className="

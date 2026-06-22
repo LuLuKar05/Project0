@@ -54,9 +54,24 @@
 /* ─── Global styles ───────────────────────────────────────────────────────── */
 
 ::selection          { background: rgba(79, 195, 247, 0.3); color: #fff; }
-::-webkit-scrollbar  { width: 5px; }
-::-webkit-scrollbar-track { background: #020610; }
-::-webkit-scrollbar-thumb { background: rgba(79, 195, 247, 0.2); }
+
+/* ─── Hide scrollbars site-wide (scrolling still works) ───────────────────────
+   Applies to the page and every inner scroll area (Skills/Contact, modals, the
+   dossier viewer…). The content still scrolls — only the visible bar is gone. */
+* { scrollbar-width: none; -ms-overflow-style: none; }  /* Firefox + legacy Edge */
+*::-webkit-scrollbar { display: none; }                  /* Chrome, Safari, Edge */
+
+/* ─── Section snap scrolling ──────────────────────────────────────────────────
+   All sections are exactly one viewport tall (h-dvh), so `mandatory` gives a
+   crisp full-page snap. Sections whose content can exceed the viewport (Skills,
+   Contact) scroll internally (overflow-y-auto) so they stay one snap unit.
+   ─────────────────────────────────────────────────────────────────────────── */
+html { scroll-snap-type: y mandatory; }
+main > section { scroll-snap-align: start; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 /* ─── SkillsSection — imperative DOM nodes (.mod, .c-*) ──────────────────────
    Cannot be Tailwind classes:

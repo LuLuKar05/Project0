@@ -15,7 +15,7 @@ interface SkillsSectionProps {
 
 export default function SkillsSection({ categories }: SkillsSectionProps) {
   return (
-    <section className="relative">
+    <section className="relative h-dvh overflow-y-auto">
       {/* Main content */}
       <div className="relative z-[5] w-full mx-auto px-[clamp(24px,5vw,72px)] py-[clamp(64px,9vw,130px)]">
 
