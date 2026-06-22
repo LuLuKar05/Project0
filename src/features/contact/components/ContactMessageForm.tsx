@@ -28,6 +28,26 @@ export default function ContactMessageForm({ onSuccess }: Props) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
+      {/* Honeypot: hidden from humans (off-screen), bait for bots. A real
+          visitor never sees or fills this; if it arrives non-empty the server
+          fakes success and silently drops the submission. Not a DB field.
+          The input is named with a neutral token (NOT "company"/"organization")
+          so browser autofill / password managers won't fill it for real users. */}
+      <div
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}
+      >
+        <input
+          type="text"
+          id="contact_reference"
+          name="contact_reference"
+          tabIndex={-1}
+          autoComplete="off"
+          value={fields.company}
+          onChange={(e) => handleChange('company')(e.target.value)}
+        />
+      </div>
+
       <Input
         label="Name"
         placeholder="Enter your name"

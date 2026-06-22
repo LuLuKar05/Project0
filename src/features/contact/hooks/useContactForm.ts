@@ -1,10 +1,12 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { validateField, type ContactFormField } from '@/features/contact/validation';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+// `company` is the honeypot input (hidden; bots fill it). `contractType` is a
+// select with a default. Neither is validated, so they're absent from `Errors`.
 export type Fields = { name: string; email: string; contractType: string; message: string; org: string; company: string };
-export type Errors = { name: string; email: string; contractType: string; message: string; org: string; company: string }
+export type Errors = { name: string; org: string; email: string; message: string };
 
 interface Options {
   onSuccess?: (mailtoUrl: string, name: string, email: string) => void;
@@ -26,7 +28,7 @@ export interface UseContactFormReturn {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const EMPTY_FIELDS: Fields = { name: '', email: '', contractType: 'Other', message: '', org: '', company: '' };
-const EMPTY_ERRORS: Errors = { name: '', email: '', contractType: '', message: '', org: '', company: '' };
+const EMPTY_ERRORS: Errors = { name: '', org: '', email: '', message: '' };
 
 function validateAll(fields: Fields): Errors {
   return {
@@ -34,7 +36,6 @@ function validateAll(fields: Fields): Errors {
     org:     validateField('org',     fields.org),
     email:   validateField('email',   fields.email),
     message: validateField('message', fields.message),
-    company: validateField('company', fields.company),
   };
 }
 
@@ -50,6 +51,11 @@ export function useContactForm({ onSuccess }: Options = {}): UseContactFormRetur
   const [successData, setSuccessData] = useState({ mailto: '', name: '', email: '' });
 
   const requestId = useRef<string>(crypto.randomUUID());
+  // Time-trap: when the form mounted. Submits far too fast to be human-typed are
+  // flagged as bots server-side (see detectBot / MIN_SUBMIT_MS). Set after mount
+  // (not during render) to keep the render pure.
+  const renderedAt = useRef<number>(0);
+  useEffect(() => { renderedAt.current = Date.now(); }, []);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +83,7 @@ export function useContactForm({ onSuccess }: Options = {}): UseContactFormRetur
     setSubmitError('');
     setSubmitted(false);
     requestId.current = crypto.randomUUID();
+    renderedAt.current = Date.now();
   }, []);
 
   // useCallback: re-created only when fields or onSuccess changes
@@ -103,10 +110,12 @@ export function useContactForm({ onSuccess }: Options = {}): UseContactFormRetur
           type:    fields.contractType,
           message: fields.message,
           org:     fields.org,
+          company: fields.company,                       // honeypot — empty for humans, filled by bots
+          elapsedMs: Date.now() - renderedAt.current,    // time-trap — too-fast submits flagged as bots
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Request failed');
+      if (!res.ok) throw new Error(data.message ?? data.error ?? 'Request failed');
 
       setSuccessData({ mailto: data.mailto ?? '', name: fields.name, email: fields.email });
       setSubmitted(true);

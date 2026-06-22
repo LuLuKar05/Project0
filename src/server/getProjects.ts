@@ -11,19 +11,23 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { withDbRetry } from '@/lib/dbRetry'
 import type { Project } from '@/lib/types'
 
 export async function getProjects(): Promise<Project[]> {
   try {
-    return await prisma.project.findMany({
-      where: { active: true },
-      include: {
-        orbit:  true,
-        visual: true,
-        tags:   true,
-      },
-      orderBy: { order: 'asc' },
-    })
+    // Retry rides out a Neon cold start (P1001) instead of showing an empty galaxy.
+    return await withDbRetry(() =>
+      prisma.project.findMany({
+        where: { active: true },
+        include: {
+          orbit:  true,
+          visual: true,
+          tags:   true,
+        },
+        orderBy: { order: 'asc' },
+      }),
+    )
   } catch (error) {
     console.error('[getProjects] Failed to fetch projects:', error)
     return []

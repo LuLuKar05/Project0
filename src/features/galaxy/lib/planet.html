@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Korriban · Three.js</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    }
+    canvas { display: block; }
+
+    /* Loading screen */
+    #loader {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #000;
+      z-index: 10;
+      transition: opacity .6s ease;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    .ring {
+      width: 56px; height: 56px;
+      border: 2px solid rgba(255, 80, 40, 0.15);
+      border-top-color: #ff5028;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loader p {
+      margin-top: 18px;
+      font-size: 12px; letter-spacing: 3px;
+      text-transform: uppercase; color: #888;
+    }
+    #progress {
+      margin-top: 4px;
+      font-size: 11px; color: #555;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Title */
+    #info {
+      position: fixed; top: 28px; left: 28px;
+      z-index: 5; pointer-events: none;
+    }
+    #info h1 {
+      font-size: 28px; font-weight: 200;
+      letter-spacing: 8px; color: #fff;
+    }
+    #info .sub {
+      margin-top: 6px;
+      font-size: 10px; letter-spacing: 4px;
+      color: #ff5028; text-transform: uppercase;
+    }
+
+    /* Hint */
+    #hint {
+      position: fixed; bottom: 22px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px; letter-spacing: 3px;
+      text-transform: uppercase; color: #555;
+      z-index: 5; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="ring"></div>
+    <p>Loading Korriban</p>
+    <span id="progress">0%</span>
+  </div>
+
+  <div id="info">
+    <h1>KORRIBAN</h1>
+    <div class="sub">Outer Rim · Horuset System</div>
+  </div>
+
+  <div id="hint">Drag to rotate · Scroll to zoom</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── Renderer / Scene / Camera ──────────────────────────────────────
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(
+      40,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 0.3, 3.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // ACES filmic tone mapping gives the lit planet a cinematic, non-blown-out
+    // look; exposure nudges overall brightness. outputColorSpace keeps colours
+    // accurate (sRGB) instead of washed out.
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.appendChild(renderer.domElement);
+
+    // ─── Texture loading ────────────────────────────────────────────────
+    // LoadingManager tracks all textures so we can show a progress %
+    // and hide the loading overlay once everything has finished downloading.
+    const loadingManager = new THREE.LoadingManager();
+    const texLoader = new THREE.TextureLoader(loadingManager);
+
+    loadingManager.onProgress = (url, loaded, total) => {
+      document.getElementById('progress').textContent =
+        `${Math.round((loaded / total) * 100)}%`;
+    };
+    loadingManager.onLoad = () => {
+      document.getElementById('loader').classList.add('hidden');
+    };
+
+    // Each PNG drives a different aspect of the surface (see material below).
+    const diffuseMap   = texLoader.load('./Korriban_Diffuse_4k_.png');   // base colour
+    const elevationMap = texLoader.load('./Korriban_Elevation_4k.png');  // height / displacement
+    const roughnessMap = texLoader.load('./Korriban_Roughness_4k_.png'); // shiny vs matte per pixel
+    const normalMap    = texLoader.load('./Korriban_Bump_4k_.png');      // fine surface bump detail (normal map)
+    const cloudsMap    = texLoader.load('./Korriban_Clouds_4k_.png');    // dust / haze layer
+
+    // Only the colour map carries sRGB colour data; the others are raw data
+    // maps (height/roughness/normals) and must stay in linear space.
+    diffuseMap.colorSpace = THREE.SRGBColorSpace;
+
+    const allMaps = [diffuseMap, elevationMap, roughnessMap, normalMap, cloudsMap];
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
+    allMaps.forEach(t => {
+      // Anisotropic filtering keeps the texture crisp at grazing angles.
+      t.anisotropy = maxAniso;
+      // The texture wraps around the planet's longitude, so repeat horizontally
+      // (S) — this makes the left/right seam join cleanly.
+      t.wrapS = THREE.RepeatWrapping;
+      // FIX: disable mipmaps (use plain linear filtering). Mipmaps were the
+      // cause of BOTH reported issues:
+      //   • the black spot at the pole (top/bottom y) — at the poles the UV
+      //     derivatives explode and the GPU sampled a tiny, near-black mip level.
+      //   • the "faded" look when zooming out — minification averaged the 4K
+      //     texture down to a low-contrast blur instead of just shrinking.
+      // LinearFilter samples the full-res texture at every distance, so the
+      // planet now just gets smaller and the poles stay clean.
+      t.minFilter = THREE.LinearFilter;
+      t.generateMipmaps = false;
+    });
+
+    // ─── Planet body ────────────────────────────────────────────────────
+    // MeshStandardMaterial is a physically-based (PBR) material: it reacts to
+    // the scene lights to produce the day/night terminator and realistic shading.
+    const planetGeo = new THREE.SphereGeometry(1, 256, 256);
+    const planetMat = new THREE.MeshStandardMaterial({
+      map: diffuseMap,                              // base surface colour
+      normalMap: normalMap,                         // fakes small bumps via lighting
+      normalScale: new THREE.Vector2(1.2, 1.2),     // strength of that bump effect
+      roughnessMap: roughnessMap,                   // per-pixel shiny/matte variation
+      roughness: 1,
+      metalness: 0,                                 // rock, not metal
+      displacementMap: elevationMap,                // actually moves vertices for real relief
+      displacementScale: 0.025,                     // how far the terrain pushes out
+      displacementBias: -0.01                       // recentre so it doesn't inflate the sphere
+    });
+    const planet = new THREE.Mesh(planetGeo, planetMat);
+    scene.add(planet);
+
+    // ─── Cloud / dust layer ─────────────────────────────────────────────
+    // A slightly larger transparent sphere. The clouds texture is white-dominant,
+    // so we feed it as both colour (map) and transparency (alphaMap) to get a
+    // thin dusty haze. Korriban is arid, so opacity is kept low.
+    const cloudsGeo = new THREE.SphereGeometry(1.012, 128, 128);
+    const cloudsMat = new THREE.MeshStandardMaterial({
+      map: cloudsMap,
+      alphaMap: cloudsMap,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,   // don't block the planet behind it in the depth buffer
+      roughness: 1,
+      metalness: 0
+    });
+    const clouds = new THREE.Mesh(cloudsGeo, cloudsMat);
+    scene.add(clouds);
+
+    // ─── Atmospheric rim glow ───────────────────────────────────────────
+    // A hand-written GLSL shader on an even larger sphere. It uses a Fresnel
+    // term (how edge-on the surface is to the camera) so the glow appears only
+    // around the planet's rim — like sunlight scattering through atmosphere.
+    const atmosphereGeo = new THREE.SphereGeometry(0.8, 64, 64);
+    const atmosphereMat = new THREE.ShaderMaterial({
+      uniforms: { glowColor: { value: new THREE.Color(0xff5028) } },
+      vertexShader: /* glsl */ `
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        void main() {
+          // Pass the view-space normal and view direction to the fragment shader.
+          vNormal = normalize(normalMatrix * normal);
+          vPositionNormal = normalize((modelViewMatrix * vec4(position, 1.0)).xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform vec3 glowColor;
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        void main() {
+          // Fresnel: bright where the surface faces away from the camera (rim),
+          // dark where it faces us. pow() tightens the glow to the edge.
+          float intensity = pow(0.65 - dot(vNormal, vPositionNormal), 2.5);
+          gl_FragColor = vec4(glowColor, 1.0) * intensity;
+        }
+      `,
+      side: THREE.BackSide,                  // render the inside, so the glow sits behind the planet's edge
+      blending: THREE.AdditiveBlending,      // add light rather than occlude — gives the glow feel
+      transparent: true
+    });
+    scene.add(new THREE.Mesh(atmosphereGeo, atmosphereMat));
+
+    // ─── Lighting ───────────────────────────────────────────────────────
+    // Faint ambient so the night side isn't pure black...
+    scene.add(new THREE.AmbientLight(0x202028, 0.4));
+    // ...and a strong directional "sun" that creates the lit/shadowed shading.
+    const sun = new THREE.DirectionalLight(0xfff0e0, 2.5);
+    sun.position.set(5, 1.5, 3);
+    scene.add(sun);
+
+    // ─── Starfield ──────────────────────────────────────────────────────
+    // Scatters thousands of coloured points on a large sphere around the scene
+    // to act as the background star field.
+    function makeStars() {
+      const g = new THREE.BufferGeometry();
+      const count = 8000;                 // number of stars
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        const r = 80 + Math.random() * 40;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+
+        const c = 0.6 + Math.random() * 0.4;
+        const tint = Math.random();
+        colors[i * 3]     = c;
+        colors[i * 3 + 1] = c * (tint > 0.9 ? 0.7 : 1.0);
+        colors[i * 3 + 2] = c * (tint > 0.95 ? 0.5 : 1.0);
+      }
+      g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      g.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+
+      const m = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        sizeAttenuation: true
+      });
+      return new THREE.Points(g, m);
+    }
+    scene.add(makeStars());
+
+    // ─── Controls ───────────────────────────────────────────────────────
+    // OrbitControls lets the user drag to rotate and scroll to dolly the camera
+    // in/out (which makes the planet appear larger/smaller).
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;     // smooth, inertial movement
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 1.4;        // closest zoom-in
+    controls.maxDistance = 30;         // farthest zoom-out (bigger = planet can shrink more)
+    controls.enablePan = false;        // keep the planet centred
+    controls.autoRotate = true;        // slowly spin until the user interacts
+    controls.autoRotateSpeed = 0.3;
+    // Stop the auto-spin the moment the user grabs the planet.
+    controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+    // ─── Render loop ────────────────────────────────────────────────────
+    const clock = new THREE.Clock();   // measures time between frames
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      clouds.rotation.y += dt * 0.02;  // clouds drift slowly relative to the surface
+      controls.update();               // applies damping / auto-rotate each frame
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ─── Resize ─────────────────────────────────────────────────────────
+    // Keep the render output and camera aspect matched to the window size.
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

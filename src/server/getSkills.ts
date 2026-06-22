@@ -8,6 +8,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { withDbRetry } from '@/lib/dbRetry'
 
 /** Plain serialisable shape passed from the server page to client components. */
 export interface SkillCategoryData {
@@ -17,15 +18,18 @@ export interface SkillCategoryData {
 
 export async function getSkills(): Promise<SkillCategoryData[]> {
   try {
-    const categories = await prisma.skillCategory.findMany({
-      orderBy: { displayOrder: 'asc' },
-      include: {
-        skills: {
-          select:  { name: true },
-          orderBy: { createdAt: 'asc' },
+    // Retry rides out a Neon cold start (P1001) instead of returning empty skills.
+    const categories = await withDbRetry(() =>
+      prisma.skillCategory.findMany({
+        orderBy: { displayOrder: 'asc' },
+        include: {
+          skills: {
+            select:  { name: true },
+            orderBy: { createdAt: 'asc' },
+          },
         },
-      },
-    })
+      }),
+    )
     return categories.map((category) => ({
       name:   category.name,
       skills: category.skills.map((skill) => skill.name),

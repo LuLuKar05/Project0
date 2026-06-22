@@ -27,6 +27,17 @@ interface CameraRigProps {
 const OVERVIEW_POSITION = new THREE.Vector3(...OVERVIEW_POS);
 const OVERVIEW_TARGET   = new THREE.Vector3(...OVERVIEW_TGT);
 
+// Reusable temporaries (avoid per-frame allocation).
+const _forward = new THREE.Vector3();
+const _right   = new THREE.Vector3();
+
+/**
+ * How far to push the camera's aim point to screen-right when a planet is
+ * selected. Aiming right of the planet makes it render in the LEFT half of the
+ * viewport, clearing the right-half detail panel. Tune to taste.
+ */
+const SELECT_AIM_SHIFT = 1.0;
+
 export default function CameraRig({ selIdx, positionsRef }: CameraRigProps) {
   /** Current lookAt point, damped separately from the camera position. */
   const lookAtRef = useRef(new THREE.Vector3(...OVERVIEW_TGT));
@@ -42,7 +53,12 @@ export default function CameraRig({ selIdx, positionsRef }: CameraRigProps) {
       offset.current.copy(planetPos).normalize().multiplyScalar(2.6);
       goalPos.current.copy(planetPos).add(offset.current);
       goalPos.current.y += 1.2;
+      // Aim to the planet's screen-right so it renders in the left half,
+      // beside the 50vw detail panel rather than behind it.
       goalTgt.current.copy(planetPos);
+      _forward.copy(planetPos).sub(goalPos.current).normalize();
+      _right.crossVectors(_forward, camera.up).normalize();
+      goalTgt.current.addScaledVector(_right, SELECT_AIM_SHIFT);
     } else {
       goalPos.current.copy(OVERVIEW_POSITION);
       goalTgt.current.copy(OVERVIEW_TARGET);

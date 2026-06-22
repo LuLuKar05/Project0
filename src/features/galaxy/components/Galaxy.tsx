@@ -32,6 +32,7 @@ import DeadOrbits   from './scene/DeadOrbits';
 import CameraRig    from './scene/CameraRig';
 import SidebarNav   from './SidebarNav';
 import DetailPanel  from './DetailPanel';
+import GalaxyLoader from './GalaxyLoader';
 
 interface GalaxyProps {
   /** Active projects in orbit order, fetched server-side (services/getProjects). */
@@ -43,6 +44,11 @@ export default function Galaxy({ projects }: GalaxyProps) {
   const [selIdx, setSelIdx]     = useState(-1);
   const [revealed, setRevealed] = useState(false);
   const [inView, setInView]     = useState(false);
+  // Lazy textures: latches true the first time the galaxy scrolls into view and
+  // stays true (we don't want to re-fetch when it scrolls back off-screen).
+  // Once active, every planet shows its diffuse; the *full* PBR set (roughness,
+  // bump, clouds, lights…) only loads for the currently selected planet.
+  const [texturesActive, setTexturesActive] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -60,7 +66,12 @@ export default function Galaxy({ projects }: GalaxyProps) {
     const el = sectionRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+        // Lazy textures: latch on first intersection and never unset, so they
+        // stay loaded once seen rather than re-fetching on scroll.
+        if (entry.isIntersecting) setTexturesActive(true);
+      },
       { threshold: 0.05 },
     );
     observer.observe(el);
@@ -70,7 +81,7 @@ export default function Galaxy({ projects }: GalaxyProps) {
   const cycle = (dir: 1 | -1) => {
     const n = projects.length;
     if (n === 0) return;
-    setSelIdx((s) => (((s < 0 ? 0 : s + dir) % n) + n) % n);
+    setSelIdx((((selIdx < 0 ? 0 : selIdx + dir) % n) + n) % n);
   };
 
   const selectedProject = selIdx >= 0 ? (projects[selIdx] ?? null) : null;
@@ -106,10 +117,14 @@ export default function Galaxy({ projects }: GalaxyProps) {
             onHover={setHovIdx}
             onSelect={setSelIdx}
             positionsRef={positionsRef}
+            texturesActive={texturesActive}
           />
           <CameraRig selIdx={selIdx} positionsRef={positionsRef} />
         </Canvas>
       </div>
+
+      {/* ── Loading screen — covers the canvas until the scene is ready ── */}
+      <GalaxyLoader inView={inView} revealed={revealed} />
 
       {/* ── HUD header ── */}
       <div className={`gx-hud${revealed ? ' in' : ''}`}>
