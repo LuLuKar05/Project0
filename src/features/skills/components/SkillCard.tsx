@@ -231,7 +231,7 @@ interface SkillsGridProps {
 
 export default function SkillsGrid({ categories }: SkillsGridProps) {
   return (
-    <div className="grid" id="grid">
+    <div className="skills-grid" id="grid">
       {categories.map((category, index) => (
         <SkillCategoryCard
           key={category.name}

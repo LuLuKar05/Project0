@@ -80,13 +80,16 @@ main > section { scroll-snap-align: start; }
    - SVG presentation properties (stroke, fill, r)
    ─────────────────────────────────────────────────────────────────────────── */
 
-.grid {
+/* Namespaced — do NOT call this `.grid`: that collides with Tailwind's `grid`
+   utility (unlayered rules win over Tailwind's layer), forcing 360px columns on
+   every element that uses `grid`. */
+.skills-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 22px;
 }
 @media (max-width: 600px) {
-  .grid { grid-template-columns: 1fr; }
+  .skills-grid { grid-template-columns: 1fr; }
 }
 
 .mod {

@@ -9,9 +9,9 @@
  * and passed down to client components as props.
  *
  * `revalidate = 3600` makes the page static with ISR: it is generated once,
- * served from cache, and regenerated at most once per hour. Creating a
- * project through POST /api/v1/postProjects also calls revalidatePath('/')
- * so new projects appear immediately without waiting for the ISR window.
+ * served from cache, and regenerated at most once per hour. Admin edits (in
+ * /admin) call revalidatePath('/') so new/changed projects appear immediately
+ * without waiting for the ISR window.
  *
  * ─── PAGE STRUCTURE ───────────────────────────────────────────────────────────
  *
