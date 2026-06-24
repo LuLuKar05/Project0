@@ -132,27 +132,6 @@ export default function HeroSection() {
 
       </div>
 
-      {/* ── Scroll indicator ─────────────────────────────────────────────────
-       *  The hero-scroll-bounce keyframe applies translateX(-50%) internally
-       *  so no extra -translate-x-1/2 class is needed.
-       ──────────────────────────────────────────────────────────────────────── */}
-      <button
-        className="
-          absolute bottom-8 left-1/2
-          flex flex-col items-center gap-1
-          bg-transparent border-0 cursor-pointer text-white/35
-          animate-[hero-scroll-bounce_2.4s_ease-in-out_infinite]
-          z-10
-        "
-        onClick={handleExplore}
-        aria-label="Scroll down to projects"
-      >
-        <span className="font-nasalization text-[0.6rem] tracking-[0.2em] uppercase">
-          Scroll
-        </span>
-        <span className="text-base" aria-hidden="true">↓</span>
-      </button>
-
     </section>
   );
 }

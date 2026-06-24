@@ -66,8 +66,17 @@ export default function DetailPanel({ project, onClose, onPrev, onNext }: Detail
           {/* Year — project.date is a Date object from Prisma; extract the year */}
           <div className="dp-yr">{new Date(project.date).getFullYear()}</div>
 
-          {/* Full description */}
-          <p className="dp-desc">{project.fullDesc || project.shortDesc}</p>
+          {/* Full description — render blank-line-separated paragraphs. Single
+              line breaks within a paragraph are preserved via CSS (pre-line). */}
+          <div className="dp-desc">
+            {(project.fullDesc || project.shortDesc)
+              .split(/\n{2,}/)
+              .map((para) => para.trim())
+              .filter(Boolean)
+              .map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+          </div>
 
           {/* Tech stack label */}
           <div className="dp-tl">Tech Stack</div>

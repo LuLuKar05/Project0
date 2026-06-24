@@ -19,7 +19,7 @@ import {
 } from '@/server/admin/skills';
 import { createTag, deleteTag } from '@/server/admin/tags';
 import { deleteMessage } from '@/server/admin/messages';
-
+// Redirection the user to the login page if they are not an admin. This is used in all admin actions except login.
 async function requireAdmin(): Promise<void> {
   if (!(await isAdmin())) redirect('/admin/login');
 }
