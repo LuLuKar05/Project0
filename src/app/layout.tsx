@@ -1,17 +1,7 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Orbitron, JetBrains_Mono, Barlow } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Orbitron, JetBrains_Mono, Barlow } from "next/font/google";
 import "./globals.css";
 import StarfieldProvider from "@/components/starfield/StarfieldProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 // gx design-system fonts — consumed via the --font-gx-* vars in globals.css.
 const orbitron = Orbitron({
@@ -46,11 +36,21 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: SITE_TITLE,
   description: SITE_DESC,
+  applicationName: "Myo Myat Thiha — Portfolio",
+  authors: [{ name: "Myo Myat Thiha" }],
+  creator: "Myo Myat Thiha",
+  keywords: [
+    "Myo Myat Thiha", "full-stack developer", "portfolio",
+    "AI", "Web3", "Next.js", "React", "TypeScript",
+  ],
+  alternates: { canonical: "/" },
   // Share preview — replace /public/og-image.jpg with a 1200×630 screenshot.
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESC,
     type: "website",
+    url: SITE_URL,
+    siteName: SITE_TITLE,
     images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Project galaxy" }],
   },
   twitter: {
@@ -61,6 +61,11 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#020610",
+  colorScheme: "dark",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -69,7 +74,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} ${jetbrains.variable} ${barlow.variable} h-full antialiased`}
+      className={`${orbitron.variable} ${jetbrains.variable} ${barlow.variable} h-full antialiased`}
     >
       <body className="bg-secondary text-white min-h-full flex flex-col">
         <StarfieldProvider>

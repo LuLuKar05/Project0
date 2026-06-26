@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { loginAction } from '@/features/admin/actions';
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function AdminLoginPage({
   searchParams,

@@ -145,6 +145,8 @@ export default function Galaxy({ projects }: GalaxyProps) {
       />
       <DetailPanel
         project={selectedProject}
+        index={selIdx}
+        total={projects.length}
         onClose={() => setSelIdx(-1)}
         onPrev={() => cycle(-1)}
         onNext={() => cycle(1)}

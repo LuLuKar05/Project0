@@ -31,12 +31,12 @@ export default function SkillsSection({ categories }: SkillsSectionProps) {
         </div>
 
         {/* Headline */}
-        <h1 className="font-nasalization text-[6vw] tracking-widest leading-[1.02] text-[000000]" >
+        <h2 className="font-nasalization text-[6vw] tracking-widest leading-[1.02] text-white" >
           Tech{' '}
           <span className="text-primary tracking-widest">
             Stack
           </span>
-        </h1>
+        </h2>
 
         {/* Sub-heading */}
         <p className="font-nasalization text-[1.25vw] text-white/55 max-w-140 leading-[1.7] mb-[clamp(48px,6vw,76px)]">

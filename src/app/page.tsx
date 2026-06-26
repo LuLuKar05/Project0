@@ -36,6 +36,7 @@ import HeroSection from '@/features/hero/components/HeroSection';
 import Galaxy from '@/features/galaxy/components/Galaxy';
 import SkillsSection from '@/features/skills/components/SkillsSection';
 import ContactSection from '@/features/contact/components/ContactSection';
+import JsonLd from '@/features/seo/JsonLd';
 import { getSkills } from '@/server/getSkills';
 import { getProjects } from '@/server/getProjects';
 
@@ -50,6 +51,7 @@ export default async function HomePage() {
 
   return (
     <main className="relative">
+      <JsonLd projects={projects} />
       <HeroSection />
       <Galaxy projects={projects} />
       <SkillsSection categories={skillCategories} />

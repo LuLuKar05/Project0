@@ -15,7 +15,7 @@
  */
 
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OVERVIEW_POS, OVERVIEW_TGT } from '@/features/galaxy/lib/sceneConfig';
 
@@ -32,11 +32,14 @@ const _forward = new THREE.Vector3();
 const _right   = new THREE.Vector3();
 
 /**
- * How far to push the camera's aim point to screen-right when a planet is
- * selected. Aiming right of the planet makes it render in the LEFT half of the
- * viewport, clearing the right-half detail panel. Tune to taste.
+ * Desktop: panel is on the RIGHT half, so aim to the planet's screen-right to
+ * push it into the LEFT half. Mobile: panel is a BOTTOM sheet, so don't shift
+ * sideways — instead aim BELOW the planet to raise it into the area above the
+ * sheet, and stand off a little further (narrow portrait FOV magnifies things).
  */
-const SELECT_AIM_SHIFT = 1.0;
+const SELECT_AIM_SHIFT  = 1.0;  // desktop: push planet left
+const MOBILE_AIM_UP     = 2.2;  // mobile: raise planet above the bottom sheet
+const MOBILE_BREAKPOINT = 820;  // matches the CSS bottom-sheet breakpoint
 
 export default function CameraRig({ selIdx, positionsRef }: CameraRigProps) {
   /** Current lookAt point, damped separately from the camera position. */
@@ -44,21 +47,29 @@ export default function CameraRig({ selIdx, positionsRef }: CameraRigProps) {
   const goalPos   = useRef(new THREE.Vector3());
   const goalTgt   = useRef(new THREE.Vector3());
   const offset    = useRef(new THREE.Vector3());
+  const width     = useThree((s) => s.size.width);
 
   useFrame(({ camera }, dt) => {
     const planetPos = selIdx >= 0 ? positionsRef.current[selIdx] : undefined;
+    const isMobile  = width <= MOBILE_BREAKPOINT;
 
     if (planetPos) {
       // Stand off from the planet: outward from the core, raised slightly.
-      offset.current.copy(planetPos).normalize().multiplyScalar(2.6);
+      offset.current.copy(planetPos).normalize().multiplyScalar(isMobile ? 3.2 : 2.6);
       goalPos.current.copy(planetPos).add(offset.current);
-      goalPos.current.y += 1.2;
-      // Aim to the planet's screen-right so it renders in the left half,
-      // beside the 50vw detail panel rather than behind it.
+      goalPos.current.y += isMobile ? 1.5 : 1.2;
       goalTgt.current.copy(planetPos);
-      _forward.copy(planetPos).sub(goalPos.current).normalize();
-      _right.crossVectors(_forward, camera.up).normalize();
-      goalTgt.current.addScaledVector(_right, SELECT_AIM_SHIFT);
+
+      if (isMobile) {
+        // Centered horizontally; aim below the planet so it sits above the sheet.
+        goalTgt.current.y -= MOBILE_AIM_UP;
+      } else {
+        // Aim to the planet's screen-right so it renders in the left half,
+        // beside the detail panel rather than behind it.
+        _forward.copy(planetPos).sub(goalPos.current).normalize();
+        _right.crossVectors(_forward, camera.up).normalize();
+        goalTgt.current.addScaledVector(_right, SELECT_AIM_SHIFT);
+      }
     } else {
       goalPos.current.copy(OVERVIEW_POSITION);
       goalTgt.current.copy(OVERVIEW_TARGET);

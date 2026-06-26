@@ -59,14 +59,14 @@ export default function ContactSection() {
           </div>
 
           {/* Headline — fluid type, same scale as hero name */}
-          <h1
+          <h2
             className="font-nasalization font-bold text-left tracking-wide leading-[0.88] m-0 text-white"
             style={{ fontSize: 'clamp(2.6rem, 7vw, 9rem)' }}
           >
             Get In
             <br />
             <span className="text-primary">Touch.</span>
-          </h1>
+          </h2>
 
           {/* Quote tagline */}
           <p
@@ -127,7 +127,7 @@ export default function ContactSection() {
         className={`modal-overlay ${activeModal === 'dossier' ? 'open' : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
       >
-        <div className="modal" style={{ maxWidth: 990, height: '90vh' }}>
+        <div className="modal" style={{ maxWidth: 990, height: '90vh' }} role="dialog" aria-modal="true" aria-label="Dossier">
           {/* Corner brackets */}
           <span className="modal-crn tl" aria-hidden="true" />
           <span className="modal-crn tr" aria-hidden="true" />
@@ -175,7 +175,7 @@ export default function ContactSection() {
         className={`modal-overlay ${activeModal === 'message' ? 'open' : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) setActiveModal(null); }}
       >
-        <div className="modal" style={{ maxWidth: 560 }}>
+        <div className="modal" style={{ maxWidth: 560 }} role="dialog" aria-modal="true" aria-label="Transmit a contract">
           {/* Corner brackets */}
           <span className="modal-crn tl" aria-hidden="true" />
           <span className="modal-crn tr" aria-hidden="true" />
