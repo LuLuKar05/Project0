@@ -35,13 +35,13 @@ export default function Input({
     ? 'border-error focus:border-error'
     : success
     ? 'border-success focus:border-success'
-    : 'border-[rgba(79,195,247,0.2)] focus:border-gx-bright focus:shadow-[0_0_0_1px_rgba(142,236,255,0.2),0_0_22px_rgba(79,195,247,0.12)]';
+    : 'border-[rgba(255,98,0,0.2)] focus:border-[#ff8a3d] focus:shadow-[0_0_0_1px_rgba(255,138,61,0.2),0_0_22px_rgba(255,98,0,0.12)]';
 
   const fieldClass = [
-    'w-full bg-[rgba(4,12,26,0.7)] border',
-    'text-[#eaf6ff] font-gx-body text-[15px]',
+    'w-full bg-[rgba(12,8,4,0.7)] border',
+    'text-white font-gx-body text-[15px]',
     'px-[15px] py-[13px] outline-none transition-all duration-300',
-    'placeholder:text-[rgba(142,236,255,0.25)]',
+    'placeholder:text-[rgba(255,255,255,0.28)]',
     disabled ? 'opacity-40 cursor-not-allowed' : '',
     borderClass,
   ].join(' ');
@@ -59,7 +59,7 @@ export default function Input({
   return (
     <div className="mb-5">
       {label && (
-        <label className="block font-gx-mono text-[10px] tracking-[0.14em] text-gx-cyan uppercase mb-[9px]">
+        <label className="block font-gx-mono text-[10px] tracking-[0.14em] text-primary uppercase mb-[9px]">
           {label}
         </label>
       )}
@@ -78,14 +78,14 @@ export default function Input({
           style={{
             cursor: 'pointer',
             appearance: 'none',
-            backgroundImage: `linear-gradient(45deg,transparent 50%,#4FC3F7 50%),linear-gradient(135deg,#4FC3F7 50%,transparent 50%)`,
+            backgroundImage: `linear-gradient(45deg,transparent 50%,#ff6200 50%),linear-gradient(135deg,#ff6200 50%,transparent 50%)`,
             backgroundPosition: 'calc(100% - 18px) center, calc(100% - 13px) center',
             backgroundSize: '5px 5px, 5px 5px',
             backgroundRepeat: 'no-repeat',
           }}
         >
           {options.map(opt => (
-            <option key={opt} value={opt} style={{ background: '#061020' }}>{opt}</option>
+            <option key={opt} value={opt} style={{ background: '#0a0a12' }}>{opt}</option>
           ))}
         </select>
       )}

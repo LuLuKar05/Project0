@@ -14,7 +14,6 @@ export default function ContactMessageForm({ onSuccess }: Props) {
     fields, errors, submitting, submitError, submitted, successData,
     handleChange, handleBlur, handleSubmit, handleReset,
   } = useContactForm({ onSuccess });
-
   if (submitted) {
     return (
       <FormSubmissionSuccess
@@ -25,7 +24,6 @@ export default function ContactMessageForm({ onSuccess }: Props) {
       />
     );
   }
-
   return (
     <form onSubmit={handleSubmit} noValidate>
       {/* Honeypot: hidden from humans (off-screen), bait for bots. A real
@@ -56,6 +54,7 @@ export default function ContactMessageForm({ onSuccess }: Props) {
         onBlur={handleBlur('name')}
         error={errors.name || undefined}
       />
+
       <Input
         label="Client Designation"
         placeholder="Represented Organization (if applicable)"
@@ -64,6 +63,7 @@ export default function ContactMessageForm({ onSuccess }: Props) {
         onBlur={handleBlur('org')}
         error={errors.org || undefined}
       />
+
       <Input
         type="email"
         label="Comm Channel"
@@ -73,6 +73,7 @@ export default function ContactMessageForm({ onSuccess }: Props) {
         onBlur={handleBlur('email')}
         error={errors.email || undefined}
       />
+
       <Input
         type="select"
         label="Contract Type"
@@ -80,6 +81,7 @@ export default function ContactMessageForm({ onSuccess }: Props) {
         value={fields.contractType}
         onChange={handleChange('contractType')}
       />
+
       <Input
         type="textarea"
         label="Mission Brief"
@@ -90,9 +92,8 @@ export default function ContactMessageForm({ onSuccess }: Props) {
         onBlur={handleBlur('message')}
         error={errors.message || undefined}
       />
-
       {submitError && (
-        <p className="mb-3 font-gx-mono text-[11px] tracking-[0.05em] text-error">
+        <p className="mb-3 font-gx-mono text-[11px] tracking-wider text-error">
           {submitError}
         </p>
       )}
